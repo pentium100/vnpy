@@ -138,7 +138,9 @@ class BidCell(QtGui.QTableWidgetItem):
         self.data = None
 
         self.setForeground(QtGui.QColor('black'))
-        self.setBackground(QtGui.QColor(255,174,201))
+        self.setBackground(QtGui.QColor(255, 174, 201))
+        self.setTextAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
+
         
         if text:
             self.setContent(text)
@@ -160,7 +162,8 @@ class AskCell(QtGui.QTableWidgetItem):
         self.data = None
 
         self.setForeground(QtGui.QColor('black'))
-        self.setBackground(QtGui.QColor(160,255,160))
+        self.setBackground(QtGui.QColor(160, 255, 160))
+        self.setTextAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
         
         if text:
             self.setContent(text)

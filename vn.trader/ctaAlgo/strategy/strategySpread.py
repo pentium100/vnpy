@@ -35,9 +35,9 @@ class SpreadStrategy(CtaTemplate):
                  'className',
                  'author',
                  'vtSymbol',
-                 'contract1',
-                 'contract2',
-                 'contract3'
+                 'volumes',
+                 'openPrice',
+                 'closePrice'
                  ]
 
     # 变量列表，保存了变量的名称
@@ -56,6 +56,7 @@ class SpreadStrategy(CtaTemplate):
         """Constructor"""
         super(SpreadStrategy, self).__init__(ctaEngine, setting)
         self.vtSymbols = setting['vtSymbol'].split(u',')
+        self.volumes = setting['volumes'].split(u',')
 
 
 
@@ -72,25 +73,36 @@ class SpreadStrategy(CtaTemplate):
     def onStart(self):
         """启动策略（必须由用户继承实现）"""
         self.writeCtaLog(u'Spread Calc演示策略启动')
+        self.started = True
         self.putEvent()
 
     # ----------------------------------------------------------------------
     def onStop(self):
         """停止策略（必须由用户继承实现）"""
+        self.started = False
         self.writeCtaLog(u'Spread Calc演示策略停止')
         self.putEvent()
 
     # ----------------------------------------------------------------------
     def onTick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
+        if not self.started:
+            return
 
         idx = self.vtSymbols.index(tick.symbol)+1
         direction = 'ask' if getattr(self, 'contract'+str(idx)) == 'long' else 'bid'
         setattr(self, 'price' + str(idx), getattr(tick, direction + 'Price1'))
         setattr(self, 'volume' + str(idx), getattr(tick, direction + 'Volume1'))
         self.spread = self.price1 - 1.5*self.price2 - 0.5*self.price3 - 900
-
-        self.volume = min(self.volume1, self.volume2, self.volume3)
+        volume1 = self.volume1/int(self.volumes[0])
+        volume2 = self.volume2/int(self.volumes[1])
+        volume3 = self.volume3/int(self.volumes[2])
+        self.volume = min(volume1, volume2, volume3)
+        if self.volume>1:
+            if self.contract1 == 'long' and self.spread <=self.openPrice:
+                self.writeCtaLog(u'Spread Calc可以开仓'+str(self.volume)+u'组')
+            if self.contract1 == 'short' and self.spread >= self.openPrice:
+                self.writeCtaLog(u'Spread Calc可以开仓' + str(self.volume) + u'组')
         self.putEvent()
 
 

@@ -3,7 +3,9 @@
         "name": "spreadCalc",
         "className": "SpreadStrategy",
         "vtSymbol": "rb1705,i1705,j1705",
-        "volume": "10,3,1"
+        "volumes": "10,3,1",
+        "openPrice": 677,
+        "closePrice": 400
     },
     {
         "name": "double ema",
