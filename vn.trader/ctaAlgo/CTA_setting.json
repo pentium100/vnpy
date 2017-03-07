@@ -1,5 +1,11 @@
 [
     {
+        "name": "spreadCalc",
+        "className": "SpreadStrategy",
+        "vtSymbol": "rb1705,i1705,j1705",
+        "volume": "10,3,1"
+    },
+    {
         "name": "double ema",
         "className": "EmaDemoStrategy",
         "vtSymbol": "IF1702"
