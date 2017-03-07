@@ -96,7 +96,7 @@ class CtpGateway(VtGateway):
     def connect(self):
         """连接"""
         # 载入json文件
-        fileName = self.gatewayName + '_connect.json'
+        fileName = self.gatewayName + '_connect2.json'
         path = os.path.abspath(os.path.dirname(__file__))
         fileName = os.path.join(path, fileName)
         

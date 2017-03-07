@@ -49,5 +49,5 @@ vn.lts/build/*
 vn.trader/ctaAlgo/data/*
 vn.trader/build/*
 vn.trader/dist/*
-vn.trader/ctpGateway/CTP_connect.json
+vn.trader/ctpGateway/CTP_connect2.json
 vn.trader/temp/
