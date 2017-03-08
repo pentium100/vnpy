@@ -2,7 +2,7 @@
     {
         "name": "spreadCalc",
         "className": "SpreadStrategy",
-        "vtSymbol": "rb1710,i1709,j1709",
+        "vtSymbol": "rb1705,i1705,j1705",
         "volumes": [10,3,1],
         "slippages": [1,1,1],
         "priceGaps": [1,0.5,0.5],

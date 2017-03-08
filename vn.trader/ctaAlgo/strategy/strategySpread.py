@@ -29,8 +29,10 @@ class SpreadStrategy(CtaTemplate):
     volume1 = EMPTY_INT  # 可成交数量
     volume2 = EMPTY_INT  # 可成交数量
     volume3 = EMPTY_INT  # 可成交数量
-    spread = EMPTY_FLOAT  # 最新可成交差价
-    volume = EMPTY_INT  # 可成交数量
+    openSpread = EMPTY_FLOAT  # 最新可成交差价
+    closeSpread = EMPTY_FLOAT  # 最新可成交差价
+    openVolume = EMPTY_INT  # 可成交数量
+    closeVolume = EMPTY_INT  # 可成交数量
 
     # 参数列表，保存了参数的名称
     paramList = ['name',
@@ -48,13 +50,14 @@ class SpreadStrategy(CtaTemplate):
     varList = ['inited',
                'trading',
                'pos',
-               'price1',
-               'price2',
-               'price3',
-               'spread',
-               'volume'
+               'openSpread',
+               'closeSpread',
+               'openVolume',
+               'closeVolume'
                ]
     qryCount = 0
+    pair1 = [{'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}]
+    pair2 = [{'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}]
 
     # ----------------------------------------------------------------------
     def __init__(self, ctaEngine, setting):
@@ -65,6 +68,8 @@ class SpreadStrategy(CtaTemplate):
         self.completed = []
         self.triggerQry = 5
         self.trading = False
+        self.price1 = {}
+        self.price2 = {}
 
         '''
         self.volumes = setting['volumes'].split(u',')
@@ -102,23 +107,49 @@ class SpreadStrategy(CtaTemplate):
     # ----------------------------------------------------------------------
     def onTick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
+        self.calcPrice('open', tick, self.pair1, self.open)
+        self.calcPrice('close', tick, self.pair2, self.close)
 
-        idx = self.vtSymbols.index(tick.symbol) + 1
-        direction = 'ask' if getattr(self, 'direction' + str(idx)) == CTAORDER_BUY else 'bid'
-        setattr(self, 'price' + str(idx), getattr(tick, direction + 'Price1'))
-        setattr(self, 'volume' + str(idx), getattr(tick, direction + 'Volume1'))
-        self.spread = self.price1 - 1.5 * self.price2 - 0.5 * self.price3 - 900
-        volume1 = self.volume1 / int(self.volumes[0])
-        volume2 = self.volume2 / int(self.volumes[1])
-        volume3 = self.volume3 / int(self.volumes[2])
-        self.volume = min(volume1, volume2, volume3)
-        if self.volume > 1 and self.orders.__len__() == 0:
-            if (self.direction1 == CTAORDER_BUY and self.spread <= self.openPrice) \
-                    or (self.direction1 == CTAORDER_SHORT and self.spread >= self.openPrice):
-                self.writeCtaLog(
-                    u'Spread Calc可以空头开仓{}组，价格分别是：{},{},{}'.format(self.volume, self.price1, self.price2, self.price3))
-                self.open(self.price1, self.price2, self.price3, self.volume)
         self.putEvent()
+
+    # bid是买价，ask是卖价。
+    def calcPrice(self, offset, tick, pair, sendOrderFunc):
+        idx = self.vtSymbols.index(tick.symbol) + 1
+        direction = self.__getattribute__('direction' + str(idx))
+
+        if offset == 'open' and direction == CTAORDER_BUY:
+            priceType = 'ask'
+        elif offset == 'open' and direction == CTAORDER_SHORT:
+            priceType = 'bid'
+        elif offset == 'close' and direction == CTAORDER_BUY:
+            priceType = 'bid'
+        else:
+            priceType = 'ask'
+
+        pair[idx-1]['price'] = getattr(tick, priceType + 'Price1')
+        pair[idx-1]['volume'] = getattr(tick, priceType + 'Volume1')
+
+        self.__setattr__(offset + 'Spread', pair[0]['price'] - 1.5 * pair[1]['price'] - 0.5 * pair[2]['price'] - 900)
+        volume1 = pair[0]['volume'] / int(self.volumes[0])
+        volume2 = pair[1]['volume'] / int(self.volumes[1])
+        volume3 = pair[2]['volume'] / int(self.volumes[2])
+        volume = min(volume1, volume2, volume3)
+        self.__setattr__(offset + 'Volume', volume)
+
+        spread = self.__getattribute__(offset + 'Spread')
+        orderPrice = self.__getattribute__(offset + 'Price')
+
+        if pair[0]['price'] * pair[1]['price'] * pair[2]['price'] > 0 \
+                and self.__getattribute__(offset + 'Volume') > 1 and self.orders.__len__() == 0 and (
+                    (self.direction1 == CTAORDER_BUY and offset == 'open' and spread <= orderPrice)
+                 or (self.direction1 == CTAORDER_SHORT and offset == 'open' and spread >= orderPrice)
+                 or (self.direction1 == CTAORDER_BUY and offset == 'close' and spread >= orderPrice)
+                 or (self.direction1 == CTAORDER_SHORT and offset == 'close' and spread <= orderPrice)):
+            self.writeCtaLog(
+                u'{}可以空头开仓{}组，价格分别是：{},{},{}'.format(self.vtSymbol, volume, pair[0].price,
+                                                     pair[1].price,
+                                                     pair[2].price))
+            sendOrderFunc(pair[0].price, pair[1].price, pair[2].price, volume)
 
     @staticmethod
     def price_include_slippage(direction, price, slippage, priceGap):
@@ -140,6 +171,28 @@ class SpreadStrategy(CtaTemplate):
                                                 self.volumes[1] * volume, self)
             orderId3 = self.ctaEngine.sendOrder(self.vtSymbols[2], self.direction3,
                                                 self.price_include_slippage(self.direction3, price3, self.slippages[2],
+                                                                            self.priceGaps[2]),
+                                                self.volumes[2] * volume, self)
+            order_group = {orderId1: "", orderId2: "", orderId3: "", }
+            self.orders.append(order_group)
+            self.eventEngine.register(EVENT_TIMER, self.checkOrder)
+
+    def close(self, price1, price2, price3, volume):
+
+        direction1 = CTAORDER_SELL if self.direction1 == CTAORDER_BUY else CTAORDER_COVER
+        direction2 = CTAORDER_SELL if self.direction2 == CTAORDER_BUY else CTAORDER_COVER
+        direction3 = CTAORDER_SELL if self.direction3 == CTAORDER_BUY else CTAORDER_COVER
+        if self.trading:
+            orderId1 = self.ctaEngine.sendOrder(self.vtSymbols[0], direction1,
+                                                self.price_include_slippage(direction1, price1, self.slippages[0],
+                                                                            self.priceGaps[0]),
+                                                self.volumes[0] * volume, self)
+            orderId2 = self.ctaEngine.sendOrder(self.vtSymbols[1], direction2,
+                                                self.price_include_slippage(direction2, price2, self.slippages[1],
+                                                                            self.priceGaps[1]),
+                                                self.volumes[1] * volume, self)
+            orderId3 = self.ctaEngine.sendOrder(self.vtSymbols[2], direction3,
+                                                self.price_include_slippage(direction3, price3, self.slippages[2],
                                                                             self.priceGaps[2]),
                                                 self.volumes[2] * volume, self)
             order_group = {orderId1: "", orderId2: "", orderId3: "", }
