@@ -55,7 +55,7 @@ class CtaTemplate(object):
             for key in self.paramList:
                 if key in setting:
                     d[key] = setting[key]
-
+    
     #----------------------------------------------------------------------
     def onInit(self):
         """初始化策略（必须由用户继承实现）"""
@@ -215,7 +215,7 @@ class TargetPosTemplate(CtaTemplate):
     def __init__(self, ctaEngine, setting):
         """Constructor"""
         super(TargetPosTemplate, self).__init__(ctaEngine, setting)
-
+        
     #----------------------------------------------------------------------
     def onTick(self, tick):
         """收到行情推送"""
