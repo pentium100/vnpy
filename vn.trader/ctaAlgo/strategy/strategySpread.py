@@ -145,8 +145,9 @@ class SpreadStrategy(CtaTemplate):
                  or (self.direction1 == CTAORDER_SHORT and offset == 'open' and spread >= orderPrice)
                  or (self.direction1 == CTAORDER_BUY and offset == 'close' and spread >= orderPrice)
                  or (self.direction1 == CTAORDER_SHORT and offset == 'close' and spread <= orderPrice)):
+            openC = u'开' if offset=='open' else '平'
             self.writeCtaLog(
-                u'{}可以空头开仓{}组，价格分别是：{},{},{}'.format(self.vtSymbol, volume, pair[0].price,
+                u'{}可以{}仓{}组，差价：{}，价格分别是：{},{},{}'.format(self.vtSymbol, openC, volume, spread, pair[0].price,
                                                      pair[1].price,
                                                      pair[2].price))
             sendOrderFunc(pair[0].price, pair[1].price, pair[2].price, volume)
@@ -234,4 +235,12 @@ class SpreadStrategy(CtaTemplate):
     def onTrade(self, trade):
         """收到成交推送（必须由用户继承实现）"""
         # 对于无需做细粒度委托控制的策略，可以忽略onOrder
+        pass
+
+    # -----------------------------------------------------------------------
+    def savePosition(self):
+        pass
+
+    # -----------------------------------------------------------------------
+    def loadPosition(self):
         pass
