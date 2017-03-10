@@ -163,7 +163,7 @@ class SpreadStrategy(CtaTemplate):
                 or (self.direction1 == CTAORDER_SHORT and offset == 'close' and spread <= orderPrice)):
             openC = u'开' if offset == 'open' else '平'
             orderVolume = self.calcAvalVolume(offset, volume)
-            if self.available < self.unitDeposit*orderVolume:
+            if offset == 'open' and self.available < self.unitDeposit*orderVolume:
                 self.writeCtaLog('可用资金不足,不能开仓.当前可用资金为{}, 开仓{}组所需保证金:{}'.format(self.available, orderVolume, self.unitDeposit*orderVolume))
                 return
             if orderVolume > 0:

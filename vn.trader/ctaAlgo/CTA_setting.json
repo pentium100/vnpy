@@ -6,10 +6,10 @@
         "volumes": [10,3,1],
         "slippages": [2,2,2],
         "priceGaps": [1,0.5,0.5],
-        "maxOpenVolume": 20,
-        "maxCloseVolume": 20,
-        "openPrice": 605,
-        "closePrice": 600,
+        "maxOpenVolume": 0,
+        "maxCloseVolume": 5,
+        "openPrice": 627,
+        "closePrice": 635,
         "unitDeposit": 45000
     }
 ]
