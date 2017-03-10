@@ -4,28 +4,12 @@
         "className": "SpreadStrategy",
         "vtSymbol": "rb1705,i1705,j1705",
         "volumes": [10,3,1],
-        "slippages": [1,1,1],
+        "slippages": [2,2,2],
         "priceGaps": [1,0.5,0.5],
-        "maxVolume": 19,
-        "openPrice": 610,
-        "closePrice": 600
-    },
-    {
-        "name": "double ema",
-        "className": "EmaDemoStrategy",
-        "vtSymbol": "IF1706"
-    },
-
-    {
-        "name": "atr rsi",
-        "className": "AtrRsiStrategy",
-        "vtSymbol": "IC1706"
-    },
-
-    {
-        "name": "king keltner",
-        "className": "KkStrategy",
-        "vtSymbol": "IH1706",
-        "kkDev": 2.2
+        "maxOpenVolume": 20,
+        "maxCloseVolume": 20,
+        "openPrice": 605,
+        "closePrice": 600,
+        "unitDeposit": 45000
     }
 ]

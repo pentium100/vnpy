@@ -4,6 +4,6 @@
     "workingOrderLimit": 2000, 
     "tradeLimit": 1000, 
     "orderSizeLimit": 1000, 
-    "active": true, 
+    "active": false, 
     "orderFlowLimit": 1000
 }

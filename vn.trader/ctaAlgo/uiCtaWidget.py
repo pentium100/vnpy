@@ -270,8 +270,11 @@ class CtaEngineManager(QtGui.QWidget):
         self.eventEngine.register(EVENT_CTA_LOG, self.signal.emit)
         
         
-    
-    
+    # ---------------------------------------------------------------------
+    def closeEvent(self, event):
+        self.ctaEngine.savePosition()
+        event.accept() # let the window close
+
     
     
 
