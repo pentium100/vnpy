@@ -566,7 +566,8 @@ class CtaEngine(object):
             d = {'name': strategy.name,
                  'vtSymbol': strategy.vtSymbol,
                  'pos': strategy.pos,
-                 'spreadPos': strategy.spreadPos}
+                 'spreadPos': strategy.spreadPos,
+                 'pendingOrders': strategy.pending}
             
             self.mainEngine.dbUpdate(POSITION_DB_NAME, strategy.className,
                                      d, flt, True)
@@ -585,6 +586,7 @@ class CtaEngine(object):
             for d in posData:
                 strategy.pos = d['pos']
                 strategy.spreadPos = d['spreadPos']
+                strategy.pending = d['pendingOrders'] if 'pendingOrders' in d else []
 
 
 ########################################################################

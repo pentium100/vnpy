@@ -6,8 +6,9 @@
         "volumes": [10,3,1],
         "slippages": [1,1,1],
         "priceGaps": [1,0.5,0.5],
-        "openPrice": 650,
-        "closePrice": 400
+        "maxVolume": 19,
+        "openPrice": 610,
+        "closePrice": 600
     },
     {
         "name": "double ema",

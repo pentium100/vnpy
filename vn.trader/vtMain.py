@@ -45,6 +45,7 @@ def main():
     
     # 初始化主引擎和主窗口对象
     mainEngine = MainEngine()
+    mainEngine.dbConnect()
     mainWindow = MainWindow(mainEngine, mainEngine.eventEngine)
     mainWindow.showMaximized()
     
