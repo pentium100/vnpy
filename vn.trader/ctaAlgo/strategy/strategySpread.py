@@ -7,6 +7,7 @@
 
 from ctaBase import *
 from vtConstant import *
+import datetime
 from eventType import *
 from ctaTemplate import CtaTemplate
 
@@ -36,6 +37,7 @@ class SpreadStrategy(CtaTemplate):
     closeVolume = EMPTY_INT  # 可成交数量
     maxOpenVolume = EMPTY_INT  # 最大持仓组
     maxCloseVolume = EMPTY_INT  # 最大持仓组
+    lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)   #最后订单完成时间， 初始化时， 取3天前。
 
     # 参数列表，保存了参数的名称
     paramList = ['name',
@@ -110,6 +112,7 @@ class SpreadStrategy(CtaTemplate):
         """启动策略（必须由用户继承实现）"""
         self.writeCtaLog(u'Spread Calc演示策略启动')
         self.trading = True
+        # self.lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)
         self.putEvent()
 
     # ----------------------------------------------------------------------
@@ -163,27 +166,44 @@ class SpreadStrategy(CtaTemplate):
                 or (self.direction1 == CTAORDER_SHORT and offset == 'close' and spread <= orderPrice)):
             openC = u'开' if offset == 'open' else '平'
             orderVolume = self.calcAvalVolume(offset, volume)
-            if offset == 'open' and self.available < self.unitDeposit*orderVolume:
-                self.writeCtaLog('可用资金不足,不能开仓.当前可用资金为{}, 开仓{}组所需保证金:{}'.format(self.available, orderVolume, self.unitDeposit*orderVolume))
-                return
-            if orderVolume > 0:
+
+            seconds = (datetime.datetime.now() - self.lastOrderCompleted).total_seconds()
+            # 上次下单之后，停5秒再下
+            if orderVolume > 0 and seconds > 5:
                 self.writeCtaLog(
                     u'{}可以{}仓{}组，差价：{}，价格分别是：{},{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
                                                               pair[0]['price'],
                                                               pair[1]['price'],
                                                               pair[2]['price']))
                 sendOrderFunc(pair[0]['price'], pair[1]['price'], pair[2]['price'], orderVolume)
+            elif orderVolume > 0:
+                self.writeCtaLog(
+                    u'时间未到，不下单。{}可以{}仓{}组，差价：{}，价格分别是：{},{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
+                                                              pair[0]['price'],
+                                                              pair[1]['price'],
+                                                              pair[2]['price']))
 
     # -------------------------------------------------------------------------------------------
     def calcAvalVolume(self, offset, volume):
-        symbol = self.vtSymbols[0]
-        attrOffset = 'maxOpenVolume' if offset == 'open' else 'maxCloseVolume'
 
+        attrOffset = 'maxOpenVolume' if offset == 'open' else 'maxCloseVolume'
         leftVolume = self.__getattribute__(attrOffset)
+
         if volume / 2 <= leftVolume:
-            return volume / 2
+            orderVolume = volume / 2
         else:
-            return leftVolume
+            orderVolume = leftVolume
+
+        if offset == 'open':
+            avalVolume = int(self.available / self.unitDeposit)
+
+            if avalVolume < orderVolume:
+                self.writeCtaLog('可用资金不足,不能开足仓位.当前可用资金为{}, 开仓{}组所需保证金:{},可开{}组'.format(self.available, orderVolume,
+                                                                           self.unitDeposit * orderVolume, avalVolume))
+            return min(avalVolume, orderVolume)
+        else:
+            return orderVolume
+
 
     @staticmethod
     def price_include_slippage(direction, price, slippage, priceGap):
@@ -225,6 +245,7 @@ class SpreadStrategy(CtaTemplate):
         orderID = self.ctaEngine.sendOrder(vtSymbol, direction, orderPrice, volume, self)
         orderID = orderID.replace('.', '_')
         return orderID
+
     # ----------------------------------------------------------------------
     def checkOrder(self, event):
         self.qryCount += 1
@@ -233,14 +254,10 @@ class SpreadStrategy(CtaTemplate):
             if self.orders.__len__() > 0:
                 self.writeCtaLog(u'超过5秒有未完成订单！！')
 
-
-
     def onAccountChange(self, event):
         data = event.dict_['data']
         self.available = data.available
         self.putEvent()
-
-
 
     # ----------------------------------------------------------------------
     def onBar(self, bar):
@@ -280,12 +297,13 @@ class SpreadStrategy(CtaTemplate):
                 self.completed.append(order_group)
                 self.pending.remove(order_group)
                 volume = lastOrder['totalVolume'] / self.volumes[self.vtSymbols.index(lastOrder['vtSymbol'])]
+                # 记录最后订单完成时间。60秒后， 才能再下第二个，以确保可用金额已回复。
+                self.lastOrderCompleted = datetime.datetime.now()
+
                 if lastOrder['offset'] == OFFSET_OPEN:
                     self.maxOpenVolume -= volume
                 else:
                     self.maxCloseVolume -= volume
-
-                # self.eventEngine.unregister(EVENT_TIMER, self.checkOrder)
 
     # ----------------------------------------------------------------------
     def onTrade(self, trade):
