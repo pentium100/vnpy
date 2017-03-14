@@ -284,7 +284,7 @@ class SpreadStrategy(CtaTemplate):
                                           'offset': order.offset,
                                           'symbol': order.symbol,
                                           'vtSymbol': order.vtSymbol}
-                self.writeCtaLog('{}-{},下单：{}手，成交：{}手'.format(order.orderID, order.status, order.totalVolume, order.tradedVolume))
+                self.writeCtaLog('订单号:{},状态:{},下单：{}手，成交：{}手'.format(order.orderID, order.status, order.totalVolume, order.tradedVolume))
                 break
 
         if order.status == STATUS_ALLTRADED or order.status == STATUS_CANCELLED:
@@ -302,7 +302,7 @@ class SpreadStrategy(CtaTemplate):
                 self.completed.append(order_group)
                 self.pending.remove(order_group)
                 volume = lastOrder['totalVolume'] / self.volumes[self.vtSymbols.index(lastOrder['vtSymbol'])]
-                # 记录最后订单完成时间。60秒后， 才能再下第二个，以确保可用金额已回复。
+                # 记录最后订单完成时间。5秒后， 才能再下第二个，以确保可用金额已回复。
                 self.lastOrderCompleted = datetime.datetime.now()
                 self.writeCtaLog(
                     '当前交易全部完成！{}'.format(','.join(x['orderID'] for x in order_group.values())))
