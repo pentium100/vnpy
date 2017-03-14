@@ -7,9 +7,22 @@
         "slippages": [2,2,2],
         "priceGaps": [1,0.5,0.5],
         "maxOpenVolume": 5,
-        "maxCloseVolume": 5,
-        "openPrice": 670,
-        "closePrice": 674,
-        "unitDeposit": 45000
+        "maxCloseVolume": 0,
+        "openPrice": 733,
+        "closePrice": 731,
+        "unitDeposit": 65000
+    },
+    {
+        "name": "spreadCalc2",
+        "className": "SpreadStrategy2",
+        "vtSymbol": "rb1705,i1705,j1705",
+        "volumes": [20,3,1],
+        "slippages": [2,2,2],
+        "priceGaps": [1,0.5,0.5],
+        "maxOpenVolume": 5,
+        "maxCloseVolume": 0,
+        "openPrice": 800,
+        "closePrice": 650,
+        "unitDeposit": 65000
     }
 ]

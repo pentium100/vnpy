@@ -13,9 +13,9 @@ from ctaTemplate import CtaTemplate
 
 
 ########################################################################
-class SpreadStrategy(CtaTemplate):
+class SpreadStrategy2(CtaTemplate):
     """三合约价差计算Demo"""
-    className = 'SpreadCalcDemo'
+    className = 'SpreadCalcDemo2'
     author = u'clw@itg'
 
     # 策略参数
@@ -72,7 +72,7 @@ class SpreadStrategy(CtaTemplate):
     # ----------------------------------------------------------------------
     def __init__(self, ctaEngine, setting):
         """Constructor"""
-        super(SpreadStrategy, self).__init__(ctaEngine, setting)
+        super(SpreadStrategy2, self).__init__(ctaEngine, setting)
         self.vtSymbols = setting['vtSymbol'].split(u',')
 
         self.pending = []
