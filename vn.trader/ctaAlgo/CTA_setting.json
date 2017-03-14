@@ -8,8 +8,8 @@
         "priceGaps": [1,0.5,0.5],
         "maxOpenVolume": 5,
         "maxCloseVolume": 5,
-        "openPrice": 670,
-        "closePrice": 674,
+        "openPrice": 724,
+        "closePrice": 690,
         "unitDeposit": 45000
     }
 ]

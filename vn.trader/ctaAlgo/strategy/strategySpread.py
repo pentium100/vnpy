@@ -38,6 +38,7 @@ class SpreadStrategy(CtaTemplate):
     maxOpenVolume = EMPTY_INT  # 最大持仓组
     maxCloseVolume = EMPTY_INT  # 最大持仓组
     lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)   #最后订单完成时间， 初始化时， 取3天前。
+    lastOrderPlaced = datetime.datetime.now()
 
     # 参数列表，保存了参数的名称
     paramList = ['name',
@@ -84,6 +85,7 @@ class SpreadStrategy(CtaTemplate):
 
         self.ctaEngine.eventEngine.register(EVENT_ACCOUNT, self.onAccountChange)
 
+
         for vtSymbol in self.vtSymbols:
             if vtSymbol not in self.spreadPos:
                 self.spreadPos[vtSymbol] = 0
@@ -113,12 +115,14 @@ class SpreadStrategy(CtaTemplate):
         self.writeCtaLog(u'Spread Calc演示策略启动')
         self.trading = True
         # self.lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)
+        self.ctaEngine.eventEngine.register(EVENT_TIMER, self.checkOrder)
         self.putEvent()
 
     # ----------------------------------------------------------------------
     def onStop(self):
         """停止策略（必须由用户继承实现）"""
         self.trading = False
+        self.ctaEngine.eventEngine.unregister(EVENT_TIMER, self.checkOrder)
         self.writeCtaLog(u'Spread Calc演示策略停止')
         self.putEvent()
 
@@ -244,14 +248,14 @@ class SpreadStrategy(CtaTemplate):
         orderPrice = self.price_include_slippage(direction, price, slippage, priceGap)
         orderID = self.ctaEngine.sendOrder(vtSymbol, direction, orderPrice, volume, self)
         orderID = orderID.replace('.', '_')
+        self.lastOrderPlaced = datetime.datetime.now()
         return orderID
 
     # ----------------------------------------------------------------------
     def checkOrder(self, event):
-        self.qryCount += 1
-        if self.qryCount > self.triggerQry:
-            self.qryCount = 0
-            if self.orders.__len__() > 0:
+        if self.pending.__len__() > 0:
+            seconds = (datetime.datetime.now() - self.lastOrderPlaced).total_seconds()
+            if seconds > 5:
                 self.writeCtaLog(u'超过5秒有未完成订单！！')
 
     def onAccountChange(self, event):
@@ -280,6 +284,7 @@ class SpreadStrategy(CtaTemplate):
                                           'offset': order.offset,
                                           'symbol': order.symbol,
                                           'vtSymbol': order.vtSymbol}
+                self.writeCtaLog('{}-{},下单：{}手，成交：{}手'.format(order.orderID, order.status, order.totalVolume, order.tradedVolume))
                 break
 
         if order.status == STATUS_ALLTRADED or order.status == STATUS_CANCELLED:
@@ -299,7 +304,8 @@ class SpreadStrategy(CtaTemplate):
                 volume = lastOrder['totalVolume'] / self.volumes[self.vtSymbols.index(lastOrder['vtSymbol'])]
                 # 记录最后订单完成时间。60秒后， 才能再下第二个，以确保可用金额已回复。
                 self.lastOrderCompleted = datetime.datetime.now()
-
+                self.writeCtaLog(
+                    '当前交易全部完成！{}'.format(','.join(x['orderID'] for x in order_group.values())))
                 if lastOrder['offset'] == OFFSET_OPEN:
                     self.maxOpenVolume -= volume
                 else:
