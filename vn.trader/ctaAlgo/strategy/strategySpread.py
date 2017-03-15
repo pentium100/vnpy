@@ -37,13 +37,14 @@ class SpreadStrategy(CtaTemplate):
     closeVolume = EMPTY_INT  # 可成交数量
     maxOpenVolume = EMPTY_INT  # 最大持仓组
     maxCloseVolume = EMPTY_INT  # 最大持仓组
-    lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)   #最后订单完成时间， 初始化时， 取3天前。
+    lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)  # 最后订单完成时间， 初始化时， 取3天前。
     lastOrderPlaced = datetime.datetime.now()
+    marginRates = []
+    qtyPerHands = []
+    reverseDeposit = 5000000
 
     # 参数列表，保存了参数的名称
     paramList = ['name',
-                 'className',
-                 'author',
                  'vtSymbol',
                  'volumes',
                  'openPrice',
@@ -52,7 +53,9 @@ class SpreadStrategy(CtaTemplate):
                  'priceGaps',
                  'maxOpenVolume',
                  'maxCloseVolume',
-                 'unitDeposit'
+                 "marginRates",
+                 "qtyPerHands",
+                 "reverseDeposit"
                  ]
 
     # 变量列表，保存了变量的名称
@@ -84,7 +87,6 @@ class SpreadStrategy(CtaTemplate):
         self.available = 0
 
         self.ctaEngine.eventEngine.register(EVENT_ACCOUNT, self.onAccountChange)
-
 
         for vtSymbol in self.vtSymbols:
             if vtSymbol not in self.spreadPos:
@@ -169,7 +171,7 @@ class SpreadStrategy(CtaTemplate):
                     or (self.direction1 == CTAORDER_BUY and offset == 'close' and spread >= orderPrice)
                 or (self.direction1 == CTAORDER_SHORT and offset == 'close' and spread <= orderPrice)):
             openC = u'开' if offset == 'open' else '平'
-            orderVolume = self.calcAvalVolume(offset, volume)
+            orderVolume = self.calcAvalVolume(offset, volume, pair)
 
             seconds = (datetime.datetime.now() - self.lastOrderCompleted).total_seconds()
             # 上次下单之后，停5秒再下
@@ -183,12 +185,12 @@ class SpreadStrategy(CtaTemplate):
             elif orderVolume > 0:
                 self.writeCtaLog(
                     u'时间未到，不下单。{}可以{}仓{}组，差价：{}，价格分别是：{},{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
-                                                              pair[0]['price'],
-                                                              pair[1]['price'],
-                                                              pair[2]['price']))
+                                                                       pair[0]['price'],
+                                                                       pair[1]['price'],
+                                                                       pair[2]['price']))
 
     # -------------------------------------------------------------------------------------------
-    def calcAvalVolume(self, offset, volume):
+    def calcAvalVolume(self, offset, volume, pair):
 
         attrOffset = 'maxOpenVolume' if offset == 'open' else 'maxCloseVolume'
         leftVolume = self.__getattribute__(attrOffset)
@@ -199,15 +201,19 @@ class SpreadStrategy(CtaTemplate):
             orderVolume = leftVolume
 
         if offset == 'open':
-            avalVolume = int(self.available / self.unitDeposit)
+
+            unitDeposit = 0
+            for i in range(3):
+                unitDeposit += pair[i]['price'] * self.marginRates[i] * self.qtyPerHands[i] * self.volumes[i]
+
+            avalVolume = int((self.available - self.reverseDeposit) / unitDeposit)
 
             if avalVolume < orderVolume:
                 self.writeCtaLog('可用资金不足,不能开足仓位.当前可用资金为{}, 开仓{}组所需保证金:{},可开{}组'.format(self.available, orderVolume,
-                                                                           self.unitDeposit * orderVolume, avalVolume))
+                                                                                       unitDeposit, avalVolume))
             return min(avalVolume, orderVolume)
         else:
             return orderVolume
-
 
     @staticmethod
     def price_include_slippage(direction, price, slippage, priceGap):
@@ -217,15 +223,27 @@ class SpreadStrategy(CtaTemplate):
             orderPrice = price - slippage * priceGap
         return orderPrice
 
+    def buildOrderInfo(self, vtOrderID, vtSymbol, direction, volume, price):
+        return {'orderID': 0,
+                'status': STATUS_UNKNOWN,
+                'totalVolume': volume,
+                'vtOrderID': vtOrderID,
+                'tradedVolume': 0,
+                'price': price,
+                'direction': direction,
+                'offset': 0,
+                'symbol': '',
+                'vtSymbol': vtSymbol}
+
     def open(self, price1, price2, price3, volume):
         if self.trading:
-            orderId1 = self.sendOrder(self.vtSymbols[0], self.direction1, price1, self.slippages[0], self.priceGaps[0],
-                                      self.volumes[0] * volume)
-            orderId2 = self.sendOrder(self.vtSymbols[1], self.direction2, price2, self.slippages[1], self.priceGaps[1],
-                                      self.volumes[1] * volume)
-            orderId3 = self.sendOrder(self.vtSymbols[2], self.direction3, price3, self.slippages[2], self.priceGaps[2],
-                                      self.volumes[2] * volume)
-            order_group = {orderId1: "", orderId2: "", orderId3: "", }
+            order1 = self.sendOrder(self.vtSymbols[0], self.direction1, price1, self.slippages[0], self.priceGaps[0],
+                                    self.volumes[0] * volume)
+            order2 = self.sendOrder(self.vtSymbols[1], self.direction2, price2, self.slippages[1], self.priceGaps[1],
+                                    self.volumes[1] * volume)
+            order3 = self.sendOrder(self.vtSymbols[2], self.direction3, price3, self.slippages[2], self.priceGaps[2],
+                                    self.volumes[2] * volume)
+            order_group = {order1['vtOrderID']: order1, order2['vtOrderID']: order2, order3['vtOrderID']: order3}
             self.pending.append(order_group)
 
     def close(self, price1, price2, price3, volume):
@@ -234,29 +252,36 @@ class SpreadStrategy(CtaTemplate):
         direction2 = CTAORDER_SELL if self.direction2 == CTAORDER_BUY else CTAORDER_COVER
         direction3 = CTAORDER_SELL if self.direction3 == CTAORDER_BUY else CTAORDER_COVER
         if self.trading:
-            orderId1 = self.sendOrder(self.vtSymbols[0], direction1, price1, self.slippages[0], self.priceGaps[0],
-                                      self.volumes[0] * volume)
-            orderId2 = self.sendOrder(self.vtSymbols[1], direction2, price2, self.slippages[1], self.priceGaps[1],
-                                      self.volumes[1] * volume)
-            orderId3 = self.sendOrder(self.vtSymbols[2], direction3, price3, self.slippages[2], self.priceGaps[2],
-                                      self.volumes[2] * volume)
-            order_group = {orderId1: "", orderId2: "", orderId3: "", }
+            order1 = self.sendOrder(self.vtSymbols[0], direction1, price1, self.slippages[0], self.priceGaps[0],
+                                    self.volumes[0] * volume)
+            order2 = self.sendOrder(self.vtSymbols[1], direction2, price2, self.slippages[1], self.priceGaps[1],
+                                    self.volumes[1] * volume)
+            order3 = self.sendOrder(self.vtSymbols[2], direction3, price3, self.slippages[2], self.priceGaps[2],
+                                    self.volumes[2] * volume)
+            order_group = {order1['vtOrderID']: order1, order2['vtOrderID']: order2, order3['vtOrderID']: order3}
             self.pending.append(order_group)
             # self.eventEngine.register(EVENT_TIMER, self.checkOrder)
 
     def sendOrder(self, vtSymbol, direction, price, slippage, priceGap, volume):
         orderPrice = self.price_include_slippage(direction, price, slippage, priceGap)
-        orderID = self.ctaEngine.sendOrder(vtSymbol, direction, orderPrice, volume, self)
-        orderID = orderID.replace('.', '_')
+        vtOrderID = self.ctaEngine.sendOrder(vtSymbol, direction, orderPrice, volume, self)
+        vtOrderID = vtOrderID.replace('.', '_')
         self.lastOrderPlaced = datetime.datetime.now()
-        return orderID
+        return self.buildOrderInfo(vtOrderID, vtSymbol, direction, volume, price)
 
     # ----------------------------------------------------------------------
     def checkOrder(self, event):
         if self.pending.__len__() > 0:
             seconds = (datetime.datetime.now() - self.lastOrderPlaced).total_seconds()
             if seconds > 5:
-                self.writeCtaLog(u'超过5秒有未完成订单！！')
+                for order_group in self.pending:
+                    for order in order_group.values():
+                        if order['status'] != STATUS_ALLTRADED and order['status'] != STATUS_CANCELLED:
+                            self.writeCtaLog(
+                                u'超过5秒有未完成订单！！{} {} @{}, 下单数量:{},已成交数量:{}'.format(order['vtSymbol'],
+                                                                                     order['direction'], order['price'],
+                                                                                     order['totalVolume'],
+                                                                                     order['tradedVolume']))
 
     def onAccountChange(self, event):
         data = event.dict_['data']
@@ -281,10 +306,12 @@ class SpreadStrategy(CtaTemplate):
                                           'vtOrderID': order.vtOrderID,
                                           'tradedVolume': order.tradedVolume,
                                           'direction': order.direction,
+                                          'price': order.price,
                                           'offset': order.offset,
                                           'symbol': order.symbol,
                                           'vtSymbol': order.vtSymbol}
-                self.writeCtaLog('订单号:{},状态:{},下单：{}手，成交：{}手'.format(order.orderID, order.status, order.totalVolume, order.tradedVolume))
+                self.writeCtaLog('订单号:{},状态:{},下单：{}手，成交：{}手'.format(order.orderID, order.status, order.totalVolume,
+                                                                     order.tradedVolume))
                 break
 
         if order.status == STATUS_ALLTRADED or order.status == STATUS_CANCELLED:
@@ -324,4 +351,3 @@ class SpreadStrategy(CtaTemplate):
     # -----------------------------------------------------------------------
     def loadPosition(self):
         pass
-
