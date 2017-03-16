@@ -104,7 +104,7 @@ class SpreadStrategy(CtaTemplate):
         if len(self.vtSymbols) != 3:
             self.writeCtaLog('合约数必须为3个')
             raise Exception('合约数必须为3个')
-        self.writeCtaLog(u'Spread Calc演示策略初始化')
+        self.writeCtaLog(u'三腿套利合约下单策略初始化')
         self.pending = []
         self.completed = []
         self.qryCount = 0
@@ -114,7 +114,7 @@ class SpreadStrategy(CtaTemplate):
     # ----------------------------------------------------------------------
     def onStart(self):
         """启动策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'Spread Calc演示策略启动')
+        self.writeCtaLog(u'三腿套利合约下单策略启动')
         self.trading = True
         # self.lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)
         self.ctaEngine.eventEngine.register(EVENT_TIMER, self.checkOrder)
@@ -125,7 +125,7 @@ class SpreadStrategy(CtaTemplate):
         """停止策略（必须由用户继承实现）"""
         self.trading = False
         self.ctaEngine.eventEngine.unregister(EVENT_TIMER, self.checkOrder)
-        self.writeCtaLog(u'Spread Calc演示策略停止')
+        self.writeCtaLog(u'三腿套利合约下单策略停止')
         self.putEvent()
 
     # ----------------------------------------------------------------------
