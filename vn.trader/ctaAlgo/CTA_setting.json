@@ -6,11 +6,14 @@
         "volumes": [20,3,1],
         "slippages": [2,2,2],
         "priceGaps": [1,0.5,0.5],
+        "marginRates": [0.15, 0.1, 0.12],
+        "qtyPerHands": [10, 100, 100],
+        "reverseDeposit": 5000000,
         "maxOpenVolume": 5,
         "maxCloseVolume": 0,
-        "openPrice": 733,
-        "closePrice": 731,
-        "unitDeposit": 65000
+        "openPrice": 727,
+        "closePrice": 700
+
     },
     {
         "name": "spreadCalc2",
@@ -19,10 +22,12 @@
         "volumes": [20,3,1],
         "slippages": [2,2,2],
         "priceGaps": [1,0.5,0.5],
+        "marginRates": [0.15, 0.12, 0.12],
+        "qtyPerHands": [10, 100, 100],
+        "reverseDeposit": 50000,
         "maxOpenVolume": 5,
         "maxCloseVolume": 0,
         "openPrice": 800,
-        "closePrice": 650,
-        "unitDeposit": 65000
+        "closePrice": 650
     }
 ]
