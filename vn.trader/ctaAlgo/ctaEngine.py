@@ -34,7 +34,14 @@ from vtFunction import todayDate
 class CtaEngine(object):
     """CTA策略引擎"""
     settingFileName = 'CTA_setting.json'
-    path = os.path.abspath(os.path.dirname(__file__))
+    if getattr(sys, 'frozen', False):
+        # The application is frozen
+        datadir = os.path.dirname(sys.executable)
+    else:
+        # The application is not frozen
+        # Change this bit to match where you store your data files:
+        datadir = os.path.dirname(__file__)
+    path = os.path.abspath(datadir)
     settingFileName = os.path.join(path, settingFileName)      
 
     #----------------------------------------------------------------------

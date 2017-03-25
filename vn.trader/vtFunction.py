@@ -7,6 +7,7 @@
 import os
 import decimal
 import json
+import sys
 from datetime import datetime
 
 MAX_NUMBER = 10000000000000
@@ -32,7 +33,14 @@ def safeUnicode(value):
 def loadMongoSetting():
     """载入MongoDB数据库的配置"""
     fileName = 'VT_setting.json'
-    path = os.path.abspath(os.path.dirname(__file__)) 
+    if getattr(sys, 'frozen', False):
+        # The application is frozen
+        datadir = os.path.dirname(sys.executable)
+    else:
+        # The application is not frozen
+        # Change this bit to match where you store your data files:
+        datadir = os.path.dirname(__file__)
+    path = os.path.abspath(datadir)
     fileName = os.path.join(path, fileName)  
     
     try:

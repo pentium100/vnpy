@@ -18,7 +18,15 @@ from riskManager.rmEngine import RmEngine
 
 
 # 文件路径名
-path = os.path.abspath(os.path.dirname(__file__))    
+if getattr(sys, 'frozen', False):
+    # The application is frozen
+    datadir = os.path.dirname(sys.executable)
+else:
+    # The application is not frozen
+    # Change this bit to match where you store your data files:
+    datadir = os.path.dirname(__file__)
+path = os.path.abspath(datadir)
+
 ICON_FILENAME = 'vnpy.ico'
 ICON_FILENAME = os.path.join(path, ICON_FILENAME)  
 
