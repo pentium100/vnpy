@@ -18,30 +18,6 @@ class SpreadStrategy(CtaTemplate):
     className = 'SpreadCalcDemo'
     author = u'clw@itg'
 
-    # 策略参数
-    direction1 = CTAORDER_SHORT  # 合约1方向
-    direction2 = CTAORDER_BUY  # 合约2方向
-    direction3 = CTAORDER_BUY  # 合约3方向
-    unitDeposit = EMPTY_FLOAT  # 每组所需的保证金
-
-    # 策略变量
-    price1 = EMPTY_FLOAT  # 合约1最新可成交价
-    price2 = EMPTY_FLOAT  # 合约2最新可成交价
-    price3 = EMPTY_FLOAT  # 合约3最新可成交价
-    volume1 = EMPTY_INT  # 可成交数量
-    volume2 = EMPTY_INT  # 可成交数量
-    volume3 = EMPTY_INT  # 可成交数量
-    openSpread = EMPTY_FLOAT  # 最新可成交差价
-    closeSpread = EMPTY_FLOAT  # 最新可成交差价
-    openVolume = EMPTY_INT  # 可成交数量
-    closeVolume = EMPTY_INT  # 可成交数量
-    maxOpenVolume = EMPTY_INT  # 最大持仓组
-    maxCloseVolume = EMPTY_INT  # 最大持仓组
-    lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)  # 最后订单完成时间， 初始化时， 取3天前。
-    lastOrderPlaced = datetime.datetime.now()
-    marginRates = []
-    qtyPerHands = []
-    reverseDeposit = 5000000
 
     # 参数列表，保存了参数的名称
     paramList = ['name',
@@ -68,15 +44,33 @@ class SpreadStrategy(CtaTemplate):
                'closeVolume',
                'available'
                ]
-    qryCount = 0
-    pair1 = [{'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}]
-    pair2 = [{'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}]
+
 
     # ----------------------------------------------------------------------
     def __init__(self, ctaEngine, setting):
         """Constructor"""
         super(SpreadStrategy, self).__init__(ctaEngine, setting)
         self.vtSymbols = setting['vtSymbol'].split(u',')
+
+        # 策略参数
+        self.direction1 = CTAORDER_SHORT  # 合约1方向
+        self.direction2 = CTAORDER_BUY  # 合约2方向
+        self.direction3 = CTAORDER_BUY  # 合约3方向
+        self.unitDeposit = EMPTY_FLOAT  # 每组所需的保证金
+
+        # 策略变量
+        self.openSpread = EMPTY_FLOAT  # 最新可成交差价
+        self.closeSpread = EMPTY_FLOAT  # 最新可成交差价
+        self.openVolume = EMPTY_INT  # 可成交数量
+        self.closeVolume = EMPTY_INT  # 可成交数量
+        self.maxOpenVolume = EMPTY_INT  # 最大持仓组
+        self.maxCloseVolume = EMPTY_INT  # 最大持仓组
+        # 最后订单完成时间， 初始化时， 取3天前。
+        self.lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)
+        self.lastOrderPlaced = datetime.datetime.now()
+        self.marginRates = []
+        self.qtyPerHands = []
+        self.reverseDeposit = 5000000
 
         self.pending = []
         self.completed = []
@@ -85,6 +79,8 @@ class SpreadStrategy(CtaTemplate):
         self.price1 = {}
         self.price2 = {}
         self.available = 0
+        self.pair1 = [{'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}]
+        self.pair2 = [{'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}]
 
         self.ctaEngine.eventEngine.register(EVENT_ACCOUNT, self.onAccountChange)
 
