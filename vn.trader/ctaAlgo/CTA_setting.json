@@ -1,5 +1,35 @@
 [
     {
+        "name": "SpreadRBHCStrategy",
+        "className": "SpreadRBHCStrategy",
+        "vtSymbol": "hc1710,rb1710",
+        "volumes": [
+            1,
+            1
+        ],
+        "qtyPerHands": [
+            10,
+            10
+        ],
+        "priceGaps": [
+            1,
+            1
+        ],
+        "slippages": [
+            2,
+            2
+        ],
+        "marginRates": [
+            0.15,
+            0.15
+        ],
+        "reverseDeposit": 5000000,
+        "maxOpenVolume": 5,
+        "maxCloseVolume": 0,
+        "openPrice": -30,
+        "closePrice": 60
+    },
+    {
         "name": "spreadCalc",
         "className": "SpreadStrategy",
         "vtSymbol": "rb1705,i1705,j1705",

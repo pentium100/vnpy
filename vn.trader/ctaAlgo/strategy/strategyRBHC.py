@@ -1,8 +1,8 @@
 # encoding: UTF-8
 
 """
-差价交易计算三个合约当前可成交价格的最新差价。
- 只做测试用：前两个合约的卖1相加-最后一个合约的买1价
+差价交易计算二个合约当前可成交价格的最新差价。
+ 做多价差策略
 """
 
 from ctaBase import *
@@ -13,9 +13,9 @@ from ctaTemplate import CtaTemplate
 
 
 ########################################################################
-class SpreadStrategy(CtaTemplate):
-    """三合约价差计算Demo"""
-    className = 'SpreadCalcDemo'
+class SpreadRBHCStrategy(CtaTemplate):
+    """二腿合约价差计算"""
+    className = 'SpreadRBHCStrategy'
     author = u'clw@itg'
 
 
@@ -49,28 +49,26 @@ class SpreadStrategy(CtaTemplate):
     # ----------------------------------------------------------------------
     def __init__(self, ctaEngine, setting):
         """Constructor"""
-        super(SpreadStrategy, self).__init__(ctaEngine, setting)
+        super(SpreadRBHCStrategy, self).__init__(ctaEngine, setting)
         self.vtSymbols = setting['vtSymbol'].split(u',')
 
         # 策略参数
-        self.direction1 = CTAORDER_SHORT  # 合约1方向
-        self.direction2 = CTAORDER_BUY  # 合约2方向
-        self.direction3 = CTAORDER_BUY  # 合约3方向
-        self.unitDeposit = EMPTY_FLOAT  # 每组所需的保证金
+        self.direction1 = CTAORDER_BUY  # 合约1方向
+        self.direction2 = CTAORDER_SHORT  # 合约2方向
 
         # 策略变量
         self.openSpread = EMPTY_FLOAT  # 最新可成交差价
         self.closeSpread = EMPTY_FLOAT  # 最新可成交差价
         self.openVolume = EMPTY_INT  # 可成交数量
         self.closeVolume = EMPTY_INT  # 可成交数量
-        # self.maxOpenVolume = EMPTY_INT  # 最大持仓组
-        # self.maxCloseVolume = EMPTY_INT  # 最大持仓组
+        # self.maxOpenVolume = EMPTY_INT  # 最大开仓数量
+        # self.maxCloseVolume = EMPTY_INT  # 最大平仓数量
         # 最后订单完成时间， 初始化时， 取3天前。
         self.lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)
         self.lastOrderPlaced = datetime.datetime.now()
+        self.reverseDeposit = 5000000
         # self.marginRates = []
         # self.qtyPerHands = []
-        self.reverseDeposit = 5000000
 
         self.pending = []
         self.completed = []
@@ -79,8 +77,8 @@ class SpreadStrategy(CtaTemplate):
         self.price1 = {}
         self.price2 = {}
         self.available = 0
-        self.pair1 = [{'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}]
-        self.pair2 = [{'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}]
+        self.pair1 = [{'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}]
+        self.pair2 = [{'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}]
 
         self.ctaEngine.eventEngine.register(EVENT_ACCOUNT, self.onAccountChange)
 
@@ -88,29 +86,23 @@ class SpreadStrategy(CtaTemplate):
             if vtSymbol not in self.spreadPos:
                 self.spreadPos[vtSymbol] = 0
 
-        '''
-        self.volumes = setting['volumes'].split(u',')
-        self.slippages = setting['slippages'].split(u',')
-        self.priceGaps = setting['priceGaps'].split(u',')
-        '''
 
     # ----------------------------------------------------------------------
     def onInit(self):
         """初始化策略（必须由用户继承实现）"""
-        if len(self.vtSymbols) != 3:
-            self.writeCtaLog('合约数必须为3个')
-            raise Exception('合约数必须为3个')
-        self.writeCtaLog(u'三腿套利合约下单策略初始化')
+        if len(self.vtSymbols) != 2:
+            self.writeCtaLog('合约数必须为2个')
+            raise Exception('合约数必须为2个')
+        self.writeCtaLog(u'二腿套利合约下单策略初始化')
         self.pending = []
         self.completed = []
-        self.qryCount = 0
         self.trading = False
         self.putEvent()
 
     # ----------------------------------------------------------------------
     def onStart(self):
         """启动策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'三腿套利合约下单策略启动')
+        self.writeCtaLog(u'两腿套利合约下单策略启动')
         self.trading = True
         # self.lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)
         self.ctaEngine.eventEngine.register(EVENT_TIMER, self.checkOrder)
@@ -150,17 +142,16 @@ class SpreadStrategy(CtaTemplate):
         pair[idx - 1]['price'] = getattr(tick, priceType + 'Price1')
         pair[idx - 1]['volume'] = getattr(tick, priceType + 'Volume1')
 
-        self.__setattr__(offset + 'Spread', pair[0]['price'] - 1.5 * pair[1]['price'] - 0.5 * pair[2]['price'] - 900)
+        self.__setattr__(offset + 'Spread', pair[0]['price'] - pair[1]['price'])
         volume1 = pair[0]['volume'] / int(self.volumes[0])
         volume2 = pair[1]['volume'] / int(self.volumes[1])
-        volume3 = pair[2]['volume'] / int(self.volumes[2])
-        volume = min(volume1, volume2, volume3)
+        volume = min(volume1, volume2)
         self.__setattr__(offset + 'Volume', volume)
 
         spread = self.__getattribute__(offset + 'Spread')
         orderPrice = self.__getattribute__(offset + 'Price')
 
-        if pair[0]['price'] * pair[1]['price'] * pair[2]['price'] > 0 \
+        if pair[0]['price'] * pair[1]['price']  > 0 \
                 and self.__getattribute__(offset + 'Volume') > 1 and self.pending.__len__() == 0 and (
                             (self.direction1 == CTAORDER_BUY and offset == 'open' and spread <= orderPrice)
                         or (self.direction1 == CTAORDER_SHORT and offset == 'open' and spread >= orderPrice)
@@ -173,17 +164,15 @@ class SpreadStrategy(CtaTemplate):
             # 上次下单之后，停5秒再下
             if orderVolume > 0 and seconds > 5:
                 self.writeCtaLog(
-                    u'{}可以{}仓{}组，差价：{}，价格分别是：{},{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
+                    u'{}可以{}仓{}组，差价：{}，价格分别是：{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
                                                               pair[0]['price'],
-                                                              pair[1]['price'],
-                                                              pair[2]['price']))
-                sendOrderFunc(pair[0]['price'], pair[1]['price'], pair[2]['price'], orderVolume)
+                                                              pair[1]['price']))
+                sendOrderFunc(pair[0]['price'], pair[1]['price'], orderVolume)
             elif orderVolume > 0:
                 self.writeCtaLog(
-                    u'时间未到，不下单。{}可以{}仓{}组，差价：{}，价格分别是：{},{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
+                    u'时间未到，不下单。{}可以{}仓{}组，差价：{}，价格分别是：{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
                                                                        pair[0]['price'],
-                                                                       pair[1]['price'],
-                                                                       pair[2]['price']))
+                                                                       pair[1]['price']))
 
     # -------------------------------------------------------------------------------------------
     def calcAvalVolume(self, offset, volume, pair):
@@ -199,7 +188,7 @@ class SpreadStrategy(CtaTemplate):
         if offset == 'open':
 
             unitDeposit = 0
-            for i in range(3):
+            for i in range(2):
                 unitDeposit += pair[i]['price'] * self.marginRates[i] * self.qtyPerHands[i] * self.volumes[i]
 
             avalVolume = int((self.available - self.reverseDeposit) / unitDeposit)
@@ -231,18 +220,17 @@ class SpreadStrategy(CtaTemplate):
                 'symbol': '',
                 'vtSymbol': vtSymbol}
 
-    def open(self, price1, price2, price3, volume):
+    def open(self, price1, price2, volume):
         if self.trading:
             order1 = self.sendOrder(self.vtSymbols[0], self.direction1, price1, self.slippages[0], self.priceGaps[0],
                                     self.volumes[0] * volume)
             order2 = self.sendOrder(self.vtSymbols[1], self.direction2, price2, self.slippages[1], self.priceGaps[1],
                                     self.volumes[1] * volume)
-            order3 = self.sendOrder(self.vtSymbols[2], self.direction3, price3, self.slippages[2], self.priceGaps[2],
-                                    self.volumes[2] * volume)
-            order_group = {order1['vtOrderID']: order1, order2['vtOrderID']: order2, order3['vtOrderID']: order3}
+
+            order_group = {order1['vtOrderID']: order1, order2['vtOrderID']: order2}
             self.pending.append(order_group)
 
-    def close(self, price1, price2, price3, volume):
+    def close(self, price1, price2, volume):
 
         direction1 = CTAORDER_SELL if self.direction1 == CTAORDER_BUY else CTAORDER_COVER
         direction2 = CTAORDER_SELL if self.direction2 == CTAORDER_BUY else CTAORDER_COVER
@@ -252,9 +240,8 @@ class SpreadStrategy(CtaTemplate):
                                     self.volumes[0] * volume)
             order2 = self.sendOrder(self.vtSymbols[1], direction2, price2, self.slippages[1], self.priceGaps[1],
                                     self.volumes[1] * volume)
-            order3 = self.sendOrder(self.vtSymbols[2], direction3, price3, self.slippages[2], self.priceGaps[2],
-                                    self.volumes[2] * volume)
-            order_group = {order1['vtOrderID']: order1, order2['vtOrderID']: order2, order3['vtOrderID']: order3}
+
+            order_group = {order1['vtOrderID']: order1, order2['vtOrderID']: order2}
             self.pending.append(order_group)
             # self.eventEngine.register(EVENT_TIMER, self.checkOrder)
 

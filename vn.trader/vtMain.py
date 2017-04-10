@@ -20,7 +20,7 @@ else:
     datadir = os.path.dirname(__file__)
 path = os.path.abspath(datadir)
 
-
+throwaway = datetime.strptime('20110101', '%Y%m%d')
 ICON_FILENAME = 'vnpy.ico'
 ICON_FILENAME = os.path.join(path, ICON_FILENAME)  
 

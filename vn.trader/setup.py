@@ -4,7 +4,7 @@ includefiles = ['ContractData.vt', 'VT_setting.json', 'ctaAlgo/CTA_setting.json'
                 'ctaAlgo/CTA_setting2.json', 'dataRecorder/DR_setting.json',
                 'riskManager/RM_setting.json', 'ctpGateway/CTP_connect2.json'
                 ]
-for dbmodule in ['dbhash', 'gdbm', 'dbm', 'dumbdbm']:
+for dbmodule in ['dbhash', 'gdbm', 'dbm', 'dumbdbm', 'talib']:
     try:
         __import__(dbmodule)
     except ImportError:
@@ -14,7 +14,7 @@ for dbmodule in ['dbhash', 'gdbm', 'dbm', 'dumbdbm']:
         packages.append(dbmodule)
 
 
-build_exe_options = {'packages': packages, 'include_files':includefiles}
+build_exe_options = {'packages': packages, 'include_files': includefiles}
 setup(name='vn.trader',
       version='0.1',
       options={"build_exe": build_exe_options},
