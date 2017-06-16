@@ -189,12 +189,14 @@ class CtaEngineManager(QtWidgets.QWidget):
         startAllButton = QtWidgets.QPushButton(text.START_ALL)
         stopAllButton = QtWidgets.QPushButton(text.STOP_ALL)
         savePositionButton = QtWidgets.QPushButton(text.SAVE_POSITION_DATA)
+        reloadButton = QtWidgets.QPushButton(u'重载策略参数')
         
         loadButton.clicked.connect(self.load)
         initAllButton.clicked.connect(self.initAll)
         startAllButton.clicked.connect(self.startAll)
         stopAllButton.clicked.connect(self.stopAll)
         savePositionButton.clicked.connect(self.ctaEngine.savePosition)
+        reloadButton.clicked.connect(self.ctaEngine.reloadSetting)
         
         # 滚动区域，放置所有的CtaStrategyManager
         self.scrollArea = QtWidgets.QScrollArea()
@@ -212,6 +214,7 @@ class CtaEngineManager(QtWidgets.QWidget):
         hbox2.addWidget(startAllButton)
         hbox2.addWidget(stopAllButton)
         hbox2.addWidget(savePositionButton)
+        hbox2.addWidget(reloadButton)
         hbox2.addStretch()
         
         vbox = QtWidgets.QVBoxLayout()

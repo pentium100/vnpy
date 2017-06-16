@@ -675,6 +675,17 @@ class PositionBuffer(object):
         
         
     
-    
+    # ----------------------------------------------------------------------
+    def reloadSetting(self):
+        with open(self.settingFileName) as f:
+            l = json.load(f)
+
+            for setting in l:
+                strategy = self.strategyDict[setting.get('name')]
+                strategy.loadSetting(setting)
+                self.putStrategyEvent(setting.get('name'))
+
+
+
 
 

@@ -54,7 +54,15 @@ class CtaTemplate(object):
             for key in self.paramList:
                 if key in setting:
                     d[key] = setting[key]
-    
+
+    def loadSetting(self, setting):
+    # 设置策略的参数
+        if setting:
+            d = self.__dict__
+            for key in self.paramList:
+                if key in setting:
+                    d[key] = setting[key]
+
     #----------------------------------------------------------------------
     def onInit(self):
         """初始化策略（必须由用户继承实现）"""
