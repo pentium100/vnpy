@@ -53,8 +53,9 @@ class SpreadRBHCStrategy(CtaTemplate):
         self.vtSymbols = setting['vtSymbol'].split(u',')
 
         # 策略参数
-        self.direction1 = CTAORDER_BUY  # 合约1方向
-        self.direction2 = CTAORDER_SHORT  # 合约2方向
+
+        self.direction1 = CTAORDER_SHORT  # 合约2方向
+        self.direction2 = CTAORDER_BUY  # 合约1方向
 
         # 策略变量
         self.openSpread = EMPTY_FLOAT  # 最新可成交差价
@@ -176,6 +177,11 @@ class SpreadRBHCStrategy(CtaTemplate):
 
     # -------------------------------------------------------------------------------------------
     def calcAvalVolume(self, offset, volume, pair):
+
+        if (self.available - self.reverseDeposit)<0:
+            self.writeCtaLog('预留保证金后，可用资金不足, 不能开仓. 当前可用资金为{}, 预留{}, 剩余{}'.format(self.available, self.reverseDeposit,
+                                                                                 self.available - self.reverseDeposit))
+            return 0
 
         attrOffset = 'maxOpenVolume' if offset == 'open' else 'maxCloseVolume'
         leftVolume = self.__getattribute__(attrOffset)

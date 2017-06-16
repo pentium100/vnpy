@@ -24,6 +24,7 @@ class CtaValueMonitor(QtGui.QTableWidget):
         self.inited = False
         
         self.initUi()
+        self.resized = False
         
     #----------------------------------------------------------------------
     def initUi(self):
@@ -33,7 +34,7 @@ class CtaValueMonitor(QtGui.QTableWidget):
         self.setEditTriggers(self.NoEditTriggers)
         
         self.setMaximumHeight(self.sizeHint().height())
-        
+
     #----------------------------------------------------------------------
     def updateData(self, data):
         """更新数据"""
@@ -54,6 +55,11 @@ class CtaValueMonitor(QtGui.QTableWidget):
                 cell = self.keyCellDict[k]
                 cell.setText(unicode(v))
 
+        if not self.resized:
+            self.setVisible(False)
+            self.resizeColumnsToContents()
+            self.setVisible(True)
+            self.resized = True
 
 ########################################################################
 class CtaStrategyManager(QtGui.QGroupBox):
@@ -81,7 +87,7 @@ class CtaStrategyManager(QtGui.QGroupBox):
         self.paramMonitor = CtaValueMonitor(self)
         self.varMonitor = CtaValueMonitor(self)
         
-        height = 65
+        height = 100
         self.paramMonitor.setFixedHeight(height)
         self.varMonitor.setFixedHeight(height)
         

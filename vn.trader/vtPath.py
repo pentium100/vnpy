@@ -16,6 +16,7 @@ else:
     # Change this bit to match where you store your data files:
     datadir = os.path.dirname(__file__)
 ROOT_PATH = os.path.abspath(datadir)
+sys.path.insert(0, '.\\language')
 sys.path.append(ROOT_PATH)
 
 # 将功能模块的目录路径添加到环境变量中

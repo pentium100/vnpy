@@ -33,7 +33,7 @@ from vtFunction import todayDate
 ########################################################################
 class CtaEngine(object):
     """CTA策略引擎"""
-    settingFileName = 'CTA_setting.json'
+    settingFileName = 'CTA_setting3.json'
     path = os.path.abspath(os.path.dirname(__file__))
     settingFileName = os.path.join(path, settingFileName)      
 

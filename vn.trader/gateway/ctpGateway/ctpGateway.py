@@ -14,6 +14,7 @@ import sys
 from copy import copy
 from datetime import datetime
 
+
 from vnctpmd import MdApi
 from vnctptd import TdApi
 from ctpDataType import *
@@ -100,16 +101,9 @@ class CtpGateway(VtGateway):
         """连接"""
         # 载入json文件
         fileName = self.gatewayName + '_connect2.json'
-        if getattr(sys, 'frozen', False):
-            # The application is frozen
-            datadir = os.path.dirname(sys.executable)
-        else:
-            # The application is not frozen
-            # Change this bit to match where you store your data files:
-            datadir = os.path.dirname(__file__)
-        path = os.path.abspath(datadir)
+        path = os.path.abspath(os.path.dirname(__file__))
         fileName = os.path.join(path, fileName)
-        
+
         try:
             f = file(fileName)
         except IOError:

@@ -1,7 +1,7 @@
 from cx_Freeze import setup, Executable
 packages = []
-includefiles = ['ContractData.vt', 'VT_setting.json', 'ctaAlgo/CTA_setting.json',
-                'ctaAlgo/CTA_setting2.json', 'dataRecorder/DR_setting.json',
+includefiles = ['ContractData.vt', 'VT_setting.json', 'ctaAlgo/CTA_setting2.json',
+                'ctaAlgo/CTA_setting.json', 'dataRecorder/DR_setting.json',
                 'riskManager/RM_setting.json', 'ctpGateway/CTP_connect2.json'
                 ]
 for dbmodule in ['dbhash', 'gdbm', 'dbm', 'dumbdbm', 'talib']:
