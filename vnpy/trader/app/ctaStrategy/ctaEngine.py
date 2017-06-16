@@ -593,7 +593,7 @@ class CtaEngine(object):
             flt = {'name': strategy.name,
                    'vtSymbol': strategy.vtSymbol}
             posData = self.mainEngine.dbQuery(POSITION_DB_NAME, strategy.className, flt)
-            
+            strategy.spreadPos = {}
             for d in posData:
                 strategy.pos = d['pos']
                 strategy.spreadPos = d['spreadPos']

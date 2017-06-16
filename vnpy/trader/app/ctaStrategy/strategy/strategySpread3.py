@@ -5,11 +5,12 @@
  只做测试用：前两个合约的卖1相加-最后一个合约的买1价
 """
 
-from ctaBase import *
-from vtConstant import *
+from vnpy.trader.vtObject import VtBarData
+from vnpy.trader.vtConstant import *
 import datetime
-from eventType import *
-from ctaTemplate import CtaTemplate
+from vnpy.trader.app.ctaStrategy.ctaBase import *
+from vnpy.trader.vtEvent import *
+from vnpy.trader.app.ctaStrategy.ctaTemplate import CtaTemplate
 from strategySpread import SpreadStrategy
 
 

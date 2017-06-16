@@ -5,11 +5,12 @@
  做多价差策略
 """
 
-from ctaBase import *
-from vtConstant import *
+from vnpy.trader.vtObject import VtBarData
+from vnpy.trader.vtConstant import *
 import datetime
-from eventType import *
-from ctaTemplate import CtaTemplate
+from vnpy.trader.app.ctaStrategy.ctaBase import *
+from vnpy.trader.vtEvent import *
+from vnpy.trader.app.ctaStrategy.ctaTemplate import CtaTemplate
 
 
 ########################################################################
@@ -80,6 +81,7 @@ class SpreadRBHCStrategy(CtaTemplate):
         self.available = 0
         self.pair1 = [{'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}]
         self.pair2 = [{'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}]
+        self.spreadPos = {}
 
         self.ctaEngine.eventEngine.register(EVENT_ACCOUNT, self.onAccountChange)
 

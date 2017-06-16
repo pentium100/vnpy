@@ -5,12 +5,12 @@
  只做测试用：前两个合约的卖1相加-最后一个合约的买1价
 """
 
-from ctaBase import *
-from vtConstant import *
+from vnpy.trader.vtObject import VtBarData
+from vnpy.trader.vtConstant import *
 import datetime
-from eventType import *
-from ctaTemplate import CtaTemplate
-
+from vnpy.trader.app.ctaStrategy.ctaBase import *
+from vnpy.trader.vtEvent import *
+from vnpy.trader.app.ctaStrategy.ctaTemplate import CtaTemplate
 
 ########################################################################
 class SpreadStrategy(CtaTemplate):
@@ -83,7 +83,7 @@ class SpreadStrategy(CtaTemplate):
         self.pair2 = [{'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}, {'volume': 0, 'price': 0}]
 
         self.ctaEngine.eventEngine.register(EVENT_ACCOUNT, self.onAccountChange)
-
+        self.spreadPos = {}
         for vtSymbol in self.vtSymbols:
             if vtSymbol not in self.spreadPos:
                 self.spreadPos[vtSymbol] = 0
