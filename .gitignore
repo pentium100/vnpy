@@ -35,16 +35,16 @@ Release/
 *.klg
 *.lkc
 
-
 # 不想同步的
 *.local
 *.temp
 *.vt
-*.dat
+*.log
+
 vn.ctp/build/*
 vn.lts/build/*
 .idea
-
+.gitignore
 
 vn.trader/ctaAlgo/data/*
 vn.trader/build/*
@@ -53,3 +53,4 @@ vn.trader/ctpGateway/CTP_connect2.json
 vn.trader/temp/
 
 *.bak
+
