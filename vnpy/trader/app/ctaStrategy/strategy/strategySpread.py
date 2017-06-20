@@ -127,11 +127,10 @@ class SpreadStrategy(CtaTemplate):
     # ----------------------------------------------------------------------
     def onTick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
-        # if self.inited:
-        self.calcPrice('open', tick, self.pair1, self.open)
-        self.calcPrice('close', tick, self.pair2, self.close)
-
-        self.putEvent()
+        if self.inited:
+            self.calcPrice('open', tick, self.pair1, self.open)
+            self.calcPrice('close', tick, self.pair2, self.close)
+            self.putEvent()
 
     # bid是买价，ask是卖价。
     def calcPrice(self, offset, tick, pair, sendOrderFunc):
@@ -203,6 +202,8 @@ class SpreadStrategy(CtaTemplate):
                 unitDeposit += pair[i]['price'] * self.marginRates[i] * self.qtyPerHands[i] * self.volumes[i]
 
             avalVolume = int((self.available - self.reverseDeposit) / unitDeposit)
+            avalVolume = 0 if avalVolume < 0 else avalVolume
+
 
             if avalVolume < orderVolume:
                 self.writeCtaLog('可用资金不足,不能开足仓位.当前可用资金为{}, 开仓{}组所需保证金:{},可开{}组'.format(self.available, orderVolume,
