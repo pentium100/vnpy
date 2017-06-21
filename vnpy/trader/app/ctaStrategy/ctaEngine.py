@@ -374,6 +374,9 @@ class CtaEngine(object):
         event = Event(type_=EVENT_CTA_LOG)
         event.dict_['data'] = log
         self.eventEngine.put(event)
+        event2 = Event(type_=EVENT_LOG)
+        event2.dict_['data'] = log
+        self.eventEngine.put(event2)
 
     def subscribeContract(self, name, strategy):
         vtSymbols = strategy.vtSymbol.split(u",")
