@@ -46,10 +46,9 @@ vn.lts/build/*
 .idea
 .gitignore
 
-vn.trader/ctaAlgo/data/*
-vn.trader/build/*
-vn.trader/dist/*
-vn.trader/ctpGateway/CTP_connect2.json
+
+vnpy/trader/app/ctaStrategy/CTA_setting.json
+vnpy/trader/gateway/ctpGateway/CTP_connection.json
 vn.trader/temp/
 
 *.bak
