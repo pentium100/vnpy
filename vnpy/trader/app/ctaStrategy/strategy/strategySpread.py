@@ -195,6 +195,9 @@ class SpreadStrategy(CtaTemplate):
         else:
             orderVolume = leftVolume
 
+        if orderVolume > 5:
+            orderVolume = 5
+
         if offset == 'open':
 
             unitDeposit = 0
@@ -203,7 +206,6 @@ class SpreadStrategy(CtaTemplate):
 
             avalVolume = int((self.available - self.reverseDeposit) / unitDeposit)
             avalVolume = 0 if avalVolume < 0 else avalVolume
-
 
             if avalVolume < orderVolume:
                 self.writeCtaLog('可用资金不足,不能开足仓位.当前可用资金为{}, 开仓{}组所需保证金:{},可开{}组'.format(self.available, orderVolume,
