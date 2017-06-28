@@ -261,7 +261,17 @@ class SpreadStrategy(CtaTemplate):
             self.pending.append(order_group)
             # self.eventEngine.register(EVENT_TIMER, self.checkOrder)
 
+
+    def checkConnection(self, vtSymbol):
+        contract = self.ctaEngine.mainEngine.getContract(vtSymbol)
+        gateway = self.ctaEngine.mainEngine.getGateway(contract.gatewayName)
+        if not gateway.tdConnected or not gateway.mdConnected:
+            gateway.connect()
+
+
+
     def sendOrder(self, vtSymbol, direction, price, slippage, priceGap, volume):
+        self.checkConnection(vtSymbol)
         orderPrice = self.price_include_slippage(direction, price, slippage, priceGap)
         vtOrderID = self.ctaEngine.sendOrder(vtSymbol, direction, orderPrice, volume, self)
         vtOrderID = vtOrderID.replace('.', '_')
@@ -313,7 +323,17 @@ class SpreadStrategy(CtaTemplate):
                                                                      order.tradedVolume))
                 break
 
-        if order.status == STATUS_ALLTRADED or order.status == STATUS_CANCELLED:
+        try:
+            order_group
+        except UnboundLocalError:
+            order_group = None
+
+        if order_group is None:
+            exit
+
+        if (order.status == STATUS_ALLTRADED or order.status == STATUS_CANCELLED):
+
+
             group_status = order.status
             for k, v in order_group.items():
                 lastOrder = v
