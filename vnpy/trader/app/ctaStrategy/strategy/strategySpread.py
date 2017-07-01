@@ -11,7 +11,9 @@ import datetime
 from vnpy.trader.app.ctaStrategy.ctaBase import *
 from vnpy.trader.vtEvent import *
 from vnpy.trader.app.ctaStrategy.ctaTemplate import CtaTemplate
+import mysql.connector
 
+EVENT_CTA_SMS = "eSms"
 ########################################################################
 class SpreadStrategy(CtaTemplate):
     """三合约价差计算Demo"""
@@ -23,6 +25,7 @@ class SpreadStrategy(CtaTemplate):
     paramList = ['name',
                  'vtSymbol',
                  'volumes',
+                 'notifyTo',
                  'openPrice',
                  'closePrice',
                  'slippages',
@@ -37,7 +40,7 @@ class SpreadStrategy(CtaTemplate):
     # 变量列表，保存了变量的名称
     varList = ['inited',
                'trading',
-               'pos',
+               'notifyTo',
                'openSpread',
                'closeSpread',
                'openVolume',
@@ -93,6 +96,19 @@ class SpreadStrategy(CtaTemplate):
         self.slippages = setting['slippages'].split(u',')
         self.priceGaps = setting['priceGaps'].split(u',')
         '''
+        self.connectToDB()
+        self.ctaEngine.eventEngine.register(EVENT_CTA_SMS, self.sendSms)
+
+
+
+    # --------------------------------------------------------------------
+    def connectToDB(self):
+        hostname = "127.0.0.1"
+        username = "root"
+        password = "36987"
+        database = "castlepeak"
+        self.myConnection = mysql.connector.connect(host=hostname, user=username, passwd=password, db=database)
+
 
     # ----------------------------------------------------------------------
     def onInit(self):
@@ -106,6 +122,7 @@ class SpreadStrategy(CtaTemplate):
         self.qryCount = 0
         self.trading = False
         self.putEvent()
+
 
     # ----------------------------------------------------------------------
     def onStart(self):
@@ -286,11 +303,16 @@ class SpreadStrategy(CtaTemplate):
                 for order_group in self.pending:
                     for order in order_group.values():
                         if order['status'] != STATUS_ALLTRADED and order['status'] != STATUS_CANCELLED:
-                            self.writeCtaLog(
-                                u'超过5秒有未完成订单！！{} {} @{}, 下单数量:{},已成交数量:{}'.format(order['vtSymbol'],
-                                                                                     order['direction'], order['price'],
-                                                                                     order['totalVolume'],
-                                                                                     order['tradedVolume']))
+                            warning = u'超过5秒有未完成订单！！{} {} @{}, 下单数量:{},已成交数量:{},订单状态:{}'.format(order['vtSymbol'],
+                                                                                      order['direction'],
+                                                                                      order['price'],
+                                                                                      order['totalVolume'],
+                                                                                      order['tradedVolume'],
+                                                                                      order['status'])
+                            self.writeCtaLog(warning)
+                            self.putSmsEvent(warning)
+
+
 
     def onAccountChange(self, event):
         data = event.dict_['data']
@@ -309,7 +331,7 @@ class SpreadStrategy(CtaTemplate):
         vtOrderID = order.vtOrderID.replace('.', '_')
         for order_group in self.pending:
             if vtOrderID in order_group:
-                order_group[vtOrderID] = {'orderID': order.orderID,
+                new_status = {'orderID': order.orderID,
                                           'status': order.status,
                                           'totalVolume': order.totalVolume,
                                           'vtOrderID': order.vtOrderID,
@@ -319,8 +341,12 @@ class SpreadStrategy(CtaTemplate):
                                           'offset': order.offset,
                                           'symbol': order.symbol,
                                           'vtSymbol': order.vtSymbol}
-                self.writeCtaLog('订单号:{},状态:{},下单：{}手，成交：{}手'.format(order.orderID, order.status, order.totalVolume,
-                                                                     order.tradedVolume))
+                if self.checkChanged(order_group[vtOrderID], new_status):
+                    order_group[vtOrderID] = new_status
+                    info = '订单号:{},状态:{},下单：{}手，成交：{}手'.format(order.orderID, order.status, order.totalVolume,
+                                                                     order.tradedVolume)
+                    self.writeCtaLog(info)
+                    self.putSmsEvent(info)
                 break
 
         try:
@@ -356,6 +382,43 @@ class SpreadStrategy(CtaTemplate):
                     self.maxOpenVolume -= volume
                 else:
                     self.maxCloseVolume -= volume
+
+    def sendSms(self, event):
+        sms = event.dict_['data']
+        if self.lastSms!=sms.smsContent:
+            with self.myConnection.cursor() as cursor:
+                # Read a single record
+                sql = "insert into table (xx,xx2) values ('%s', '%s')"
+                cursor.execute(sql, ('smsContent', self.notifyTo))
+
+
+    def putSmsEvent(self, content):
+        sms = SmsEventData()
+        sms.smsContent = content
+        event = Event(type_=EVENT_CTA_SMS)
+        event.dict_['data'] = sms
+        self.eventEngine.put(event)
+
+
+    # ----------------------------------------------------------------------
+    def checkChanged(self, oldValue, newValue):
+        '''
+        {'orderID': order.orderID,
+         'status': order.status,
+         'totalVolume': order.totalVolume,
+         'vtOrderID': order.vtOrderID,
+         'tradedVolume': order.tradedVolume,
+         'direction': order.direction,
+         'price': order.price,
+         'offset': order.offset,
+         'symbol': order.symbol,
+         'vtSymbol': order.vtSymbol}
+        '''
+        if oldValue.cmp(newValue) != 0:
+            return False
+        return True
+
+
 
     # ----------------------------------------------------------------------
     def onTrade(self, trade):
