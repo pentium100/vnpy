@@ -11,7 +11,9 @@ import datetime
 from vnpy.trader.app.ctaStrategy.ctaBase import *
 from vnpy.trader.vtEvent import *
 from vnpy.trader.app.ctaStrategy.ctaTemplate import CtaTemplate
-import mysql.connector
+import MySQLdb as mysql
+from SmsEventData import SmsEventData
+from vnpy.event.eventEngine import Event
 
 EVENT_CTA_SMS = "eSms"
 ########################################################################
@@ -98,16 +100,18 @@ class SpreadStrategy(CtaTemplate):
         '''
         self.connectToDB()
         self.ctaEngine.eventEngine.register(EVENT_CTA_SMS, self.sendSms)
+        self.lastSms = ''
 
 
 
     # --------------------------------------------------------------------
     def connectToDB(self):
-        hostname = "127.0.0.1"
-        username = "root"
-        password = "36987"
-        database = "castlepeak"
-        self.myConnection = mysql.connector.connect(host=hostname, user=username, passwd=password, db=database)
+        hostname = "59.57.246.61"
+        username = "OATEST"
+        password = "123456789"
+        database = "mas"
+        self.myConnection = mysql.connect(host=hostname, user=username, passwd=password, db=database)
+        self.myConnection.autocommit(True)
 
 
     # ----------------------------------------------------------------------
@@ -131,6 +135,7 @@ class SpreadStrategy(CtaTemplate):
         self.trading = True
         # self.lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)
         self.ctaEngine.eventEngine.register(EVENT_TIMER, self.checkOrder)
+        self.putSmsEvent("短信测试")
         self.putEvent()
 
     # ----------------------------------------------------------------------
@@ -385,11 +390,20 @@ class SpreadStrategy(CtaTemplate):
 
     def sendSms(self, event):
         sms = event.dict_['data']
-        if self.lastSms!=sms.smsContent:
-            with self.myConnection.cursor() as cursor:
+        if self.lastSms != sms.smsContent:
+            self.lastSms = sms.smsContent
+
+            content = sms.smsContent.decode("utf8")
+            content = content.encode("gbk")
+
+            for notifyTo in self.notifyTo:
+                notifyTo = notifyTo.encode("gbk")
+                cursor = self.myConnection.cursor()
+                print self.myConnection.character_set_name()
                 # Read a single record
-                sql = "insert into table (xx,xx2) values ('%s', '%s')"
-                cursor.execute(sql, ('smsContent', self.notifyTo))
+                sql = 'insert into api_mt_BBB(mobiles,content,is_wap) values ("%s", "%s", 0)'%(notifyTo, content)
+                # sql = sql.decode('latin1')
+                cursor.execute(sql)
 
 
     def putSmsEvent(self, content):
@@ -397,7 +411,7 @@ class SpreadStrategy(CtaTemplate):
         sms.smsContent = content
         event = Event(type_=EVENT_CTA_SMS)
         event.dict_['data'] = sms
-        self.eventEngine.put(event)
+        self.ctaEngine.eventEngine.put(event)
 
 
     # ----------------------------------------------------------------------
@@ -414,10 +428,29 @@ class SpreadStrategy(CtaTemplate):
          'symbol': order.symbol,
          'vtSymbol': order.vtSymbol}
         '''
-        if oldValue.cmp(newValue) != 0:
-            return False
-        return True
 
+        return self.compare_dictionaries(oldValue, newValue)
+
+    def compare_dictionaries(self, dict1, dict2):
+        if dict1 == None or dict2 == None:
+            return False
+
+        if type(dict1) is not dict or type(dict2) is not dict:
+            return False
+
+        shared_keys = set(dict2.keys()) & set(dict2.keys())
+
+        if not (len(shared_keys) == len(dict1.keys()) and len(shared_keys) == len(dict2.keys())):
+            return False
+
+        dicts_are_equal = True
+        for key in dict1.keys():
+            if type(dict1[key]) is dict:
+                dicts_are_equal = dicts_are_equal and compare_dictionaries(dict1[key], dict2[key])
+            else:
+                dicts_are_equal = dicts_are_equal and (dict1[key] == dict2[key])
+
+        return dicts_are_equal
 
 
     # ----------------------------------------------------------------------

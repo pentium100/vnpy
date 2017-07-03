@@ -1,4 +1,6 @@
-from vtObject import VtBaseData
+# encoding: UTF-8
+
+from vnpy.trader.vtObject import VtBaseData
 import time
 from vnpy.trader.vtConstant import (EMPTY_STRING, EMPTY_UNICODE,
                                     EMPTY_FLOAT, EMPTY_INT)

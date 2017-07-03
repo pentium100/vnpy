@@ -2,4 +2,4 @@ pymongo
 websocket-client
 msgpack-python
 qdarkstyle
-mysql-connector-python
+MySql-python
