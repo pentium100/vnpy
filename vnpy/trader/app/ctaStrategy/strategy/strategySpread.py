@@ -42,7 +42,6 @@ class SpreadStrategy(CtaTemplate):
     # 变量列表，保存了变量的名称
     varList = ['inited',
                'trading',
-               'notifyTo',
                'openSpread',
                'closeSpread',
                'openVolume',
@@ -137,7 +136,6 @@ class SpreadStrategy(CtaTemplate):
         self.smsCount = 0
         # self.lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)
         self.ctaEngine.eventEngine.register(EVENT_TIMER, self.checkOrder)
-        self.putSmsEvent("短信测试")
         self.putEvent()
 
     # ----------------------------------------------------------------------
