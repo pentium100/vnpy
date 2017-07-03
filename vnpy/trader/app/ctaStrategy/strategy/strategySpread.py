@@ -105,9 +105,9 @@ class SpreadStrategy(CtaTemplate):
 
     # --------------------------------------------------------------------
     def connectToDB(self):
-        hostname = "59.57.246.61"
-        username = "OATEST"
-        password = "123456789"
+        hostname = "xxxxxxxxxxxxx"
+        username = "xxxxxxxxxxx"
+        password = "xxxxxxxxxxxx"
         database = "mas"
         self.myConnection = mysql.connect(host=hostname, user=username, passwd=password, db=database)
         self.myConnection.autocommit(True)
