@@ -76,7 +76,7 @@ class SpreadStrategy(CtaTemplate):
         # self.marginRates = []
         # self.qtyPerHands = []
         self.reverseDeposit = 5000000
-
+        self.smsCount = 0
         self.pending = []
         self.completed = []
         self.triggerQry = 5
@@ -124,6 +124,7 @@ class SpreadStrategy(CtaTemplate):
         self.pending = []
         self.completed = []
         self.qryCount = 0
+        self.smsCount = 0
         self.trading = False
         self.putEvent()
 
@@ -133,6 +134,7 @@ class SpreadStrategy(CtaTemplate):
         """启动策略（必须由用户继承实现）"""
         self.writeCtaLog(u'三腿套利合约下单策略启动')
         self.trading = True
+        self.smsCount = 0
         # self.lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)
         self.ctaEngine.eventEngine.register(EVENT_TIMER, self.checkOrder)
         self.putSmsEvent("短信测试")
@@ -144,7 +146,9 @@ class SpreadStrategy(CtaTemplate):
         self.trading = False
         self.ctaEngine.eventEngine.unregister(EVENT_TIMER, self.checkOrder)
         self.writeCtaLog(u'三腿套利合约下单策略停止')
+        self.smsCount = 0
         self.putEvent()
+
 
     # ----------------------------------------------------------------------
     def onTick(self, tick):
@@ -392,6 +396,9 @@ class SpreadStrategy(CtaTemplate):
         sms = event.dict_['data']
         if self.lastSms != sms.smsContent:
             self.lastSms = sms.smsContent
+            self.smsCount+=1
+            if self.smsCount>51:
+                return
 
             content = sms.smsContent.decode("utf8")
             content = content.encode("gbk")
