@@ -314,19 +314,21 @@ class SpreadStrategy(CtaTemplate):
     def checkOrder(self, event):
         if self.pending.__len__() > 0:
             seconds = (datetime.datetime.now() - self.lastOrderPlaced).total_seconds()
-            if seconds > 5 and seconds < 45:
+            if seconds > 5:
                 for order_group in self.pending:
                     for order in order_group.values():
                         if order['status'] != STATUS_ALLTRADED and order['status'] != STATUS_CANCELLED:
-                            warning = u'当前时间：{} 超过5秒有未完成订单！！{} {}{} @{}, 下单数量:{},已成交数量:{},订单状态:{}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),order['vtSymbol'],
-                                                                                                order['offset'],
-                                                                                                order['direction'],
-                                                                                                order['price'],
-                                                                                                order['totalVolume'],
-                                                                                                order['tradedVolume'],
-                                                                                                order['status'])
+                            warning = u'当前时间：{} 超过5秒有未完成订单！！{} {}{} @{}, 下单数量:{},已成交数量:{},订单状态:{}'.format(
+                                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), order['vtSymbol'],
+                                order['offset'],
+                                order['direction'],
+                                order['price'],
+                                order['totalVolume'],
+                                order['tradedVolume'],
+                                order['status'])
                             self.writeCtaLog(warning)
-                            self.putSmsEvent(warning)
+                            if seconds < 45:
+                                self.putSmsEvent(warning)
 
     def onAccountChange(self, event):
         data = event.dict_['data']
@@ -357,8 +359,10 @@ class SpreadStrategy(CtaTemplate):
                               'vtSymbol': order.vtSymbol}
                 if self.checkChanged(order_group[vtOrderID], new_status):
                     order_group[vtOrderID] = new_status
-                    info = '当前时间:{},订单号:{},合约{}, 方向:{}, 价格:{},状态:{},下单：{}手，成交：{}手'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),order.orderID, order.vtSymbol, order.direction, order.price, order.status, order.totalVolume,
-                                                               order.tradedVolume)
+                    info = '当前时间:{},订单号:{},合约{}, 方向:{}, 价格:{},状态:{},下单：{}手，成交：{}手'.format(
+                        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), order.orderID, order.vtSymbol,
+                        order.direction, order.price, order.status, order.totalVolume,
+                        order.tradedVolume)
                     self.writeCtaLog(info)
 
                     self.putSmsEvent(info)
