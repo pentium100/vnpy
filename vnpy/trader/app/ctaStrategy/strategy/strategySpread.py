@@ -11,14 +11,9 @@ import datetime
 from vnpy.trader.app.ctaStrategy.ctaBase import *
 from vnpy.trader.vtEvent import *
 from vnpy.trader.app.ctaStrategy.ctaTemplate import CtaTemplate
-import MySQLdb as mysql
-from SmsEventData import SmsEventData
 from vnpy.event.eventEngine import Event
-import json
-import os
-
-EVENT_CTA_SMS = "eSms"
-
+from vnpy.trader.app.ctaStrategy.SmsEventData import SmsEventData
+from vnpy.trader.app.ctaStrategy.ctaSms import EVENT_CTA_SMS
 
 ########################################################################
 class SpreadStrategy(CtaTemplate):
@@ -52,9 +47,6 @@ class SpreadStrategy(CtaTemplate):
                'available'
                ]
 
-    settingFileName = 'SMS_setting.json'
-    path = os.path.abspath(os.path.dirname(__file__))
-    settingFileName = os.path.join(path, settingFileName)
 
     # ----------------------------------------------------------------------
     def __init__(self, ctaEngine, setting):
@@ -83,6 +75,7 @@ class SpreadStrategy(CtaTemplate):
         # self.reverseDeposit = 5000000
         # self.reverseDeposit = 0
         self.smsCount = 0
+        self.timerCount = 0
         self.pending = []
         self.completed = []
         self.triggerQry = 5
@@ -104,27 +97,6 @@ class SpreadStrategy(CtaTemplate):
         self.slippages = setting['slippages'].split(u',')
         self.priceGaps = setting['priceGaps'].split(u',')
         '''
-        self.connectToDB()
-        self.ctaEngine.eventEngine.register(EVENT_CTA_SMS, self.sendSms)
-        self.lastSms = ''
-
-    def loadSmsSetting(self):
-
-        """读取策略配置"""
-        with open(self.settingFileName) as f:
-            l = json.load(f)
-        return l
-
-    # --------------------------------------------------------------------
-    def connectToDB(self):
-
-        smsSetting = self.loadSmsSetting()
-        hostname = smsSetting['hostname']
-        username = smsSetting['username']
-        password = smsSetting['password']
-        database = smsSetting['database']
-        self.myConnection = mysql.connect(host=hostname, user=username, passwd=password, db=database)
-        self.myConnection.autocommit(True)
 
     # ----------------------------------------------------------------------
     def onInit(self):
@@ -146,6 +118,7 @@ class SpreadStrategy(CtaTemplate):
         self.writeCtaLog(u'三腿套利合约下单策略启动')
         self.trading = True
         self.smsCount = 0
+        self.timerCount = 0
         # self.lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)
         self.ctaEngine.eventEngine.register(EVENT_TIMER, self.checkOrder)
         self.putEvent()
@@ -157,6 +130,7 @@ class SpreadStrategy(CtaTemplate):
         self.ctaEngine.eventEngine.unregister(EVENT_TIMER, self.checkOrder)
         self.writeCtaLog(u'三腿套利合约下单策略停止')
         self.smsCount = 0
+        self.timerCount = 0
         self.putEvent()
 
     # ----------------------------------------------------------------------
@@ -258,7 +232,7 @@ class SpreadStrategy(CtaTemplate):
         return orderPrice
 
     def buildOrderInfo(self, vtOrderID, vtSymbol, direction, volume, price):
-        return {'orderID': 0,
+        return {'orderID': vtOrderID,
                 'status': STATUS_UNKNOWN,
                 'totalVolume': volume,
                 'vtOrderID': vtOrderID,
@@ -266,7 +240,7 @@ class SpreadStrategy(CtaTemplate):
                 'price': price,
                 'direction': direction,
                 'offset': 0,
-                'symbol': '',
+                'symbol': vtSymbol,
                 'vtSymbol': vtSymbol}
 
     def open(self, price1, price2, price3, volume):
@@ -308,10 +282,14 @@ class SpreadStrategy(CtaTemplate):
         vtOrderID = self.ctaEngine.sendOrder(vtSymbol, direction, orderPrice, volume, self)
         vtOrderID = vtOrderID.replace('.', '_')
         self.lastOrderPlaced = datetime.datetime.now()
-        return self.buildOrderInfo(vtOrderID, vtSymbol, direction, volume, price)
+        return self.buildOrderInfo(vtOrderID, vtSymbol, direction, volume, orderPrice)
 
     # ----------------------------------------------------------------------
     def checkOrder(self, event):
+        self.timerCount = self.timerCount + 1
+        if self.timerCount < 5:
+            return
+        self.timerCount = 0
         if self.pending.__len__() > 0:
             seconds = (datetime.datetime.now() - self.lastOrderPlaced).total_seconds()
             if seconds > 5:
@@ -347,7 +325,7 @@ class SpreadStrategy(CtaTemplate):
         vtOrderID = order.vtOrderID.replace('.', '_')
         for order_group in self.pending:
             if vtOrderID in order_group:
-                new_status = {'orderID': order.orderID,
+                new_status = {'orderID': vtOrderID,
                               'status': order.status,
                               'totalVolume': order.totalVolume,
                               'vtOrderID': vtOrderID,
@@ -358,6 +336,11 @@ class SpreadStrategy(CtaTemplate):
                               'symbol': order.symbol,
                               'vtSymbol': order.vtSymbol}
                 if self.checkChanged(order_group[vtOrderID], new_status):
+                    print("old values:")
+                    print(order_group[vtOrderID])
+                    print("------------------------------------")
+                    print("new values:")
+                    print(new_status)
                     order_group[vtOrderID] = new_status
                     info = '当前时间:{},订单号:{},合约{}, 方向:{}, 价格:{},状态:{},下单：{}手，成交：{}手'.format(
                         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), order.orderID, order.vtSymbol,
@@ -401,29 +384,11 @@ class SpreadStrategy(CtaTemplate):
                 else:
                     self.maxCloseVolume -= volume
 
-    def sendSms(self, event):
-        sms = event.dict_['data']
-        if self.lastSms != sms.smsContent:
-            self.lastSms = sms.smsContent
-            self.smsCount += 1
-            if self.smsCount > 51:
-                return
-
-            content = sms.smsContent.decode("utf8")
-            content = content.encode("gbk")
-
-            for notifyTo in self.notifyTo:
-                notifyTo = notifyTo.encode("gbk")
-                cursor = self.myConnection.cursor()
-                print self.myConnection.character_set_name()
-                # Read a single record
-                sql = 'insert into api_mt_BBB(mobiles,content,is_wap) values ("%s", "%s", 0)' % (notifyTo, content)
-                # sql = sql.decode('latin1')
-                cursor.execute(sql)
 
     def putSmsEvent(self, content):
         sms = SmsEventData()
         sms.smsContent = content
+        sms.notifyTo = self.notifyTo
         event = Event(type_=EVENT_CTA_SMS)
         event.dict_['data'] = sms
         self.ctaEngine.eventEngine.put(event)
@@ -442,7 +407,6 @@ class SpreadStrategy(CtaTemplate):
          'symbol': order.symbol,
          'vtSymbol': order.vtSymbol}
         '''
-
         return not self.compare_dictionaries(oldValue, newValue)
 
     def compare_dictionaries(self, dict1, dict2):

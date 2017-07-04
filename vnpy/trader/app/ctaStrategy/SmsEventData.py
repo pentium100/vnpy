@@ -15,3 +15,4 @@ class SmsEventData(VtBaseData):
 
         self.smsTime = time.strftime('%X', time.localtime())  # 日志生成时间
         self.smsContent = EMPTY_UNICODE  # 日志信息
+        self.notifyTo = []

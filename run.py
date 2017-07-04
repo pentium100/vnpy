@@ -16,7 +16,7 @@ from vnpy.trader.gateway import ctpGateway
 
 # 加载上层应用
 from vnpy.trader.app import riskManager, ctaStrategy
-
+from vnpy.trader.app.ctaStrategy.ctaSms import CtaSms
 
 #----------------------------------------------------------------------
 def main():
@@ -33,6 +33,7 @@ def main():
     # 添加上层应用
     me.addApp(riskManager)
     me.addApp(ctaStrategy)
+    ctaSms = CtaSms(ee)
 
     # 创建主窗口
     mw = MainWindow(me, ee)
