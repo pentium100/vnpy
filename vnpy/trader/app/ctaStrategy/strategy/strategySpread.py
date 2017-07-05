@@ -137,7 +137,10 @@ class SpreadStrategy(CtaTemplate):
     # ----------------------------------------------------------------------
     def onTick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
-        if self.inited:
+        now = datetime.datetime.now().strftime('%H:%M:%S')
+        closeAt = '22:51:00'
+
+        if self.inited and now < closeAt:
             self.calcPrice('open', tick, self.pair1, self.open)
             self.calcPrice('close', tick, self.pair2, self.close)
             self.putEvent()
