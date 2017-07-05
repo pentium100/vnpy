@@ -40,7 +40,7 @@ class CtaSms:
 
     def sendSms(self, event):
         sms = event.dict_['data']
-
+        print sms.smsContent
         content = sms.smsContent.decode("utf8")
         content = content.encode("gbk")
 

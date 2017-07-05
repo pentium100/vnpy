@@ -40,32 +40,39 @@ class CtaValueMonitor(QtWidgets.QTableWidget):
         if key in text.STRATEGY_TEXT:
             return text.STRATEGY_TEXT[key]
         else:
-            return key
+            return ''
 
     def translateKeys(self, keys):
         labels = []
         for key in keys:
-            labels.append(self.keyToLabel(key))
+            label = self.keyToLabel(key)
+            if label!='':
+                labels.append(label)
         return labels
     #----------------------------------------------------------------------
     def updateData(self, data):
         """更新数据"""
         if not self.inited:
-            self.setColumnCount(len(data))
-            self.setHorizontalHeaderLabels(self.translateKeys(data.keys()))
+            labels = self.translateKeys(data.keys())
+            self.setColumnCount(len(labels))
+            self.setHorizontalHeaderLabels(labels)
             
             col = 0
             for k, v in data.items():
                 cell = QtWidgets.QTableWidgetItem(unicode(v))
-                self.keyCellDict[self.keyToLabel(k)] = cell
-                self.setItem(0, col, cell)
-                col += 1
+                label = self.keyToLabel(k)
+                if label != '':
+                    self.keyCellDict[label] = cell
+                    self.setItem(0, col, cell)
+                    col += 1
             
             self.inited = True
         else:
             for k, v in data.items():
-                cell = self.keyCellDict[self.keyToLabel(k)]
-                cell.setText(unicode(v))
+                label = self.keyToLabel(k)
+                if label != '':
+                    cell = self.keyCellDict[label]
+                    cell.setText(unicode(v))
 
 
 ########################################################################

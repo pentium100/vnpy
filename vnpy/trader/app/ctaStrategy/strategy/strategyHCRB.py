@@ -11,12 +11,15 @@ import datetime
 from vnpy.trader.app.ctaStrategy.ctaBase import *
 from vnpy.trader.vtEvent import *
 from vnpy.trader.app.ctaStrategy.ctaTemplate import CtaTemplate
+from vnpy.event.eventEngine import Event
+from vnpy.trader.app.ctaStrategy.SmsEventData import SmsEventData
+from vnpy.trader.app.ctaStrategy.ctaSms import EVENT_CTA_SMS
 
 
 ########################################################################
-class SpreadRBHCStrategy(CtaTemplate):
+class SpreadHCRBStrategy(CtaTemplate):
     """二腿合约价差计算"""
-    className = 'SpreadRBHCStrategy'
+    className = 'SpreadHCRBStrategy'
     author = u'clw@itg'
 
 
@@ -24,6 +27,7 @@ class SpreadRBHCStrategy(CtaTemplate):
     paramList = ['name',
                  'vtSymbol',
                  'volumes',
+                 'notifyTo',
                  'openPrice',
                  'closePrice',
                  'slippages',
@@ -50,13 +54,13 @@ class SpreadRBHCStrategy(CtaTemplate):
     # ----------------------------------------------------------------------
     def __init__(self, ctaEngine, setting):
         """Constructor"""
-        super(SpreadRBHCStrategy, self).__init__(ctaEngine, setting)
+        super(SpreadHCRBStrategy, self).__init__(ctaEngine, setting)
         self.vtSymbols = setting['vtSymbol'].split(u',')
 
         # 策略参数
 
-        self.direction1 = CTAORDER_SHORT  # 合约2方向
-        self.direction2 = CTAORDER_BUY  # 合约1方向
+        self.direction1 = CTAORDER_BUY  # 合约1方向
+        self.direction2 = CTAORDER_SHORT  # 合约2方向
 
         # 策略变量
         self.openSpread = EMPTY_FLOAT  # 最新可成交差价
@@ -68,10 +72,12 @@ class SpreadRBHCStrategy(CtaTemplate):
         # 最后订单完成时间， 初始化时， 取3天前。
         self.lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)
         self.lastOrderPlaced = datetime.datetime.now()
-        self.reverseDeposit = 5000000
+        # self.reverseDeposit = 5000000
         # self.marginRates = []
         # self.qtyPerHands = []
 
+
+	self.timerCount = 0
         self.pending = []
         self.completed = []
         self.triggerQry = 5
@@ -99,6 +105,7 @@ class SpreadRBHCStrategy(CtaTemplate):
         self.writeCtaLog(u'二腿套利合约下单策略初始化')
         self.pending = []
         self.completed = []
+	self.qryCount = 0
         self.trading = False
         self.putEvent()
 
@@ -107,6 +114,7 @@ class SpreadRBHCStrategy(CtaTemplate):
         """启动策略（必须由用户继承实现）"""
         self.writeCtaLog(u'两腿套利合约下单策略启动')
         self.trading = True
+        self.timerCount = 0
         # self.lastOrderCompleted = datetime.datetime.now() - datetime.timedelta(days=3)
         self.ctaEngine.eventEngine.register(EVENT_TIMER, self.checkOrder)
         self.putEvent()
@@ -116,7 +124,8 @@ class SpreadRBHCStrategy(CtaTemplate):
         """停止策略（必须由用户继承实现）"""
         self.trading = False
         self.ctaEngine.eventEngine.unregister(EVENT_TIMER, self.checkOrder)
-        self.writeCtaLog(u'三腿套利合约下单策略停止')
+        self.writeCtaLog(u'HCRB套利合约下单策略停止')
+	self.timerCount = 0
         self.putEvent()
 
     # ----------------------------------------------------------------------
@@ -192,6 +201,8 @@ class SpreadRBHCStrategy(CtaTemplate):
         else:
             orderVolume = leftVolume
 
+        if orderVolume > 5:
+            orderVolume = 5
         if offset == 'open':
 
             unitDeposit = 0
@@ -199,6 +210,7 @@ class SpreadRBHCStrategy(CtaTemplate):
                 unitDeposit += pair[i]['price'] * self.marginRates[i] * self.qtyPerHands[i] * self.volumes[i]
 
             avalVolume = int((self.available - self.reverseDeposit) / unitDeposit)
+            avalVolume = 0 if avalVolume < 0 else avalVolume
 
             if avalVolume < orderVolume:
                 self.writeCtaLog('可用资金不足,不能开足仓位.当前可用资金为{}, 开仓{}组所需保证金:{},可开{}组'.format(self.available, orderVolume,
@@ -216,7 +228,7 @@ class SpreadRBHCStrategy(CtaTemplate):
         return orderPrice
 
     def buildOrderInfo(self, vtOrderID, vtSymbol, direction, volume, price):
-        return {'orderID': 0,
+        return {'orderID': vtOrderID,
                 'status': STATUS_UNKNOWN,
                 'totalVolume': volume,
                 'vtOrderID': vtOrderID,
@@ -224,7 +236,7 @@ class SpreadRBHCStrategy(CtaTemplate):
                 'price': price,
                 'direction': direction,
                 'offset': 0,
-                'symbol': '',
+                'symbol': vtSymbol,
                 'vtSymbol': vtSymbol}
 
     def open(self, price1, price2, volume):
@@ -252,26 +264,42 @@ class SpreadRBHCStrategy(CtaTemplate):
             self.pending.append(order_group)
             # self.eventEngine.register(EVENT_TIMER, self.checkOrder)
 
+    def checkConnection(self, vtSymbol):
+        contract = self.ctaEngine.mainEngine.getContract(vtSymbol)
+        gateway = self.ctaEngine.mainEngine.getGateway(contract.gatewayName)
+        if not gateway.tdConnected or not gateway.mdConnected:
+            gateway.connect()
     def sendOrder(self, vtSymbol, direction, price, slippage, priceGap, volume):
+        self.checkConnection(vtSymbol)
         orderPrice = self.price_include_slippage(direction, price, slippage, priceGap)
         vtOrderID = self.ctaEngine.sendOrder(vtSymbol, direction, orderPrice, volume, self)
         vtOrderID = vtOrderID.replace('.', '_')
         self.lastOrderPlaced = datetime.datetime.now()
-        return self.buildOrderInfo(vtOrderID, vtSymbol, direction, volume, price)
+        return self.buildOrderInfo(vtOrderID, vtSymbol, direction, volume, orderPrice)
 
     # ----------------------------------------------------------------------
     def checkOrder(self, event):
+        self.timerCount = self.timerCount + 1
+        if self.timerCount < 5:
+            return
+        self.timerCount = 0
         if self.pending.__len__() > 0:
             seconds = (datetime.datetime.now() - self.lastOrderPlaced).total_seconds()
             if seconds > 5:
                 for order_group in self.pending:
                     for order in order_group.values():
                         if order['status'] != STATUS_ALLTRADED and order['status'] != STATUS_CANCELLED:
-                            self.writeCtaLog(
-                                u'超过5秒有未完成订单！！{} {} @{}, 下单数量:{},已成交数量:{}'.format(order['vtSymbol'],
-                                                                                     order['direction'], order['price'],
-                                                                                     order['totalVolume'],
-                                                                                     order['tradedVolume']))
+                            warning = u'当前时间：{} 超过5秒有未完成订单！！{} {}{} @{}, 下单数量:{},已成交数量:{},订单状态:{}'.format(
+                                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), order['vtSymbol'],
+                                order['offset'],
+                                order['direction'],
+                                order['price'],
+                                order['totalVolume'],
+                                order['tradedVolume'],
+                                order['status'])
+                            self.writeCtaLog(warning)
+                            if seconds < 45:
+                                self.putSmsEvent(warning)
 
     def onAccountChange(self, event):
         data = event.dict_['data']
@@ -290,20 +318,39 @@ class SpreadRBHCStrategy(CtaTemplate):
         vtOrderID = order.vtOrderID.replace('.', '_')
         for order_group in self.pending:
             if vtOrderID in order_group:
-                order_group[vtOrderID] = {'orderID': order.orderID,
-                                          'status': order.status,
-                                          'totalVolume': order.totalVolume,
-                                          'vtOrderID': order.vtOrderID,
-                                          'tradedVolume': order.tradedVolume,
-                                          'direction': order.direction,
-                                          'price': order.price,
-                                          'offset': order.offset,
-                                          'symbol': order.symbol,
-                                          'vtSymbol': order.vtSymbol}
-                self.writeCtaLog('订单号:{},状态:{},下单：{}手，成交：{}手'.format(order.orderID, order.status, order.totalVolume,
-                                                                     order.tradedVolume))
+                new_status = {'orderID': vtOrderID,
+                              'status': order.status,
+                              'totalVolume': order.totalVolume,
+                              'vtOrderID': vtOrderID,
+                              'tradedVolume': order.tradedVolume,
+                              'direction': order.direction,
+                              'price': order.price,
+                              'offset': order.offset,
+                              'symbol': order.symbol,
+                              'vtSymbol': order.vtSymbol}
+                if self.checkChanged(order_group[vtOrderID], new_status):
+                    print("old values:")
+                    print(order_group[vtOrderID])
+                    print("------------------------------------")
+                    print("new values:")
+                    print(new_status)
+                    order_group[vtOrderID] = new_status
+                    info = '当前时间:{},订单号:{},合约{}, 方向:{}, 价格:{},状态:{},下单：{}手，成交：{}手'.format(
+                        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), order.orderID, order.vtSymbol,
+                        order.direction, order.price, order.status, order.totalVolume,
+                        order.tradedVolume)
+                    self.writeCtaLog(info)
+
+                    self.putSmsEvent(info)
                 break
 
+        try:
+            order_group
+        except UnboundLocalError:
+            order_group = None
+
+        if order_group is None:
+            exit
         if order.status == STATUS_ALLTRADED or order.status == STATUS_CANCELLED:
             group_status = order.status
             for k, v in order_group.items():
@@ -328,6 +375,50 @@ class SpreadRBHCStrategy(CtaTemplate):
                 else:
                     self.maxCloseVolume -= volume
 
+    def putSmsEvent(self, content):
+        sms = SmsEventData()
+        sms.smsContent = content
+        sms.notifyTo = self.notifyTo
+        event = Event(type_=EVENT_CTA_SMS)
+        event.dict_['data'] = sms
+        self.ctaEngine.eventEngine.put(event)
+
+    # ----------------------------------------------------------------------
+    def checkChanged(self, oldValue, newValue):
+        '''
+        {'orderID': order.orderID,
+         'status': order.status,
+         'totalVolume': order.totalVolume,
+         'vtOrderID': order.vtOrderID,
+         'tradedVolume': order.tradedVolume,
+         'direction': order.direction,
+         'price': order.price,
+         'offset': order.offset,
+         'symbol': order.symbol,
+         'vtSymbol': order.vtSymbol}
+        '''
+        return not self.compare_dictionaries(oldValue, newValue)
+
+    def compare_dictionaries(self, dict1, dict2):
+        if dict1 == None or dict2 == None:
+            return False
+
+        if type(dict1) is not dict or type(dict2) is not dict:
+            return False
+
+        shared_keys = set(dict2.keys()) & set(dict2.keys())
+
+        if not (len(shared_keys) == len(dict1.keys()) and len(shared_keys) == len(dict2.keys())):
+            return False
+
+        dicts_are_equal = True
+        for key in dict1.keys():
+            if type(dict1[key]) is dict:
+                dicts_are_equal = dicts_are_equal and compare_dictionaries(dict1[key], dict2[key])
+            else:
+                dicts_are_equal = dicts_are_equal and (dict1[key] == dict2[key])
+
+        return dicts_are_equal
     # ----------------------------------------------------------------------
     def onTrade(self, trade):
         """收到成交推送（必须由用户继承实现）"""
