@@ -27,6 +27,7 @@ class SpreadHCRBStrategy(CtaTemplate):
     paramList = ['name',
                  'vtSymbol',
                  'volumes',
+                 'maxGroupPerTrade',
                  'notifyTo',
                  'openPrice',
                  'closePrice',
@@ -201,8 +202,8 @@ class SpreadHCRBStrategy(CtaTemplate):
         else:
             orderVolume = leftVolume
 
-        if orderVolume > 5:
-            orderVolume = 5
+        if orderVolume > self.maxGroupPerTrade:
+            orderVolume = self.maxGroupPerTrade
         if offset == 'open':
 
             unitDeposit = 0

@@ -28,6 +28,7 @@ class SpreadStrategy(CtaTemplate):
                  'notifyTo',
                  'openPrice',
                  'closePrice',
+                 'maxGroupPerTrade',
                  'slippages',
                  'priceGaps',
                  'maxOpenVolume',
@@ -204,8 +205,8 @@ class SpreadStrategy(CtaTemplate):
         else:
             orderVolume = leftVolume
 
-        if orderVolume > 5:
-            orderVolume = 5
+        if orderVolume > self.maxGroupPerTrade:
+            orderVolume = self.maxGroupPerTrade
 
         if offset == 'open':
 
