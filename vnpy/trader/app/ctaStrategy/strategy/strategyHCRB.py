@@ -172,14 +172,18 @@ class SpreadHCRBStrategy(CtaTemplate):
             openC = u'开' if offset == 'open' else '平'
             orderVolume = self.calcAvalVolume(offset, volume, pair)
 
-            seconds = (datetime.datetime.now() - self.lastOrderCompleted).total_seconds()
+            # seconds = (datetime.datetime.now() - self.lastOrderCompleted).total_seconds()
             # 上次下单之后，停5秒再下
-            if orderVolume > 0 and seconds > 5:
-                self.writeCtaLog(
-                    u'{}可以{}仓{}组，差价：{}，价格分别是：{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
+            # 2017/7/7 不再等5秒下单
+            if orderVolume > 0:
+                info = u'{}可以{}仓{}组，差价：{}，价格分别是：{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
                                                               pair[0]['price'],
-                                                              pair[1]['price']))
+                                                              pair[1]['price'])
+
                 sendOrderFunc(pair[0]['price'], pair[1]['price'], orderVolume)
+                self.writeCtaLog(info)
+                if self.trading:
+                    self.putSmsEvent(info)
             elif orderVolume > 0:
                 self.writeCtaLog(
                     u'时间未到，不下单。{}可以{}仓{}组，差价：{}，价格分别是：{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
@@ -270,6 +274,7 @@ class SpreadHCRBStrategy(CtaTemplate):
         gateway = self.ctaEngine.mainEngine.getGateway(contract.gatewayName)
         if not gateway.tdConnected or not gateway.mdConnected:
             gateway.connect()
+
     def sendOrder(self, vtSymbol, direction, price, slippage, priceGap, volume):
         self.checkConnection(vtSymbol)
         orderPrice = self.price_include_slippage(direction, price, slippage, priceGap)
@@ -299,7 +304,7 @@ class SpreadHCRBStrategy(CtaTemplate):
                                 order['tradedVolume'],
                                 order['status'])
                             self.writeCtaLog(warning)
-                            if seconds < 45:
+                            if seconds < 75:
                                 self.putSmsEvent(warning)
 
     def onAccountChange(self, event):
@@ -330,9 +335,9 @@ class SpreadHCRBStrategy(CtaTemplate):
                               'symbol': order.symbol,
                               'vtSymbol': order.vtSymbol}
                 if self.checkChanged(order_group[vtOrderID], new_status):
+                    print("------------------------------------")
                     print("old values:")
                     print(order_group[vtOrderID])
-                    print("------------------------------------")
                     print("new values:")
                     print(new_status)
                     order_group[vtOrderID] = new_status
@@ -342,7 +347,7 @@ class SpreadHCRBStrategy(CtaTemplate):
                         order.tradedVolume)
                     self.writeCtaLog(info)
 
-                    self.putSmsEvent(info)
+                    # self.putSmsEvent(info)
                 break
 
         try:
