@@ -163,7 +163,7 @@ class SpreadHCRBStrategy(CtaTemplate):
         spread = self.__getattribute__(offset + 'Spread')
         orderPrice = self.__getattribute__(offset + 'Price')
 
-        if pair[0]['price'] * pair[1]['price']  > 0 \
+        if self.trading and pair[0]['price'] * pair[1]['price'] > 0 \
                 and self.__getattribute__(offset + 'Volume') > 1 and self.pending.__len__() == 0 and (
                             (self.direction1 == CTAORDER_BUY and offset == 'open' and spread <= orderPrice)
                         or (self.direction1 == CTAORDER_SHORT and offset == 'open' and spread >= orderPrice)
@@ -175,21 +175,15 @@ class SpreadHCRBStrategy(CtaTemplate):
             # seconds = (datetime.datetime.now() - self.lastOrderCompleted).total_seconds()
             # 上次下单之后，停5秒再下
             # 2017/7/7 不再等5秒下单
-            if orderVolume > 0:
+            if orderVolume > 0 :
                 info = u'{}可以{}仓{}组，差价：{}，价格分别是：{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
                                                               pair[0]['price'],
                                                               pair[1]['price'])
 
                 sendOrderFunc(pair[0]['price'], pair[1]['price'], orderVolume)
                 self.writeCtaLog(info)
-                if self.trading:
-                    self.putSmsEvent(info)
-                    self.ctaEngine.writeLogToDB(info)
-            elif orderVolume > 0:
-                self.writeCtaLog(
-                    u'时间未到，不下单。{}可以{}仓{}组，差价：{}，价格分别是：{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
-                                                                       pair[0]['price'],
-                                                                       pair[1]['price']))
+                self.putSmsEvent(info)
+                self.ctaEngine.writeLogToDB(info)
 
     # -------------------------------------------------------------------------------------------
     def calcAvalVolume(self, offset, volume, pair):
