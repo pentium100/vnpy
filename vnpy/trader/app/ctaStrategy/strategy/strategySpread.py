@@ -198,6 +198,11 @@ class SpreadStrategy(CtaTemplate):
     # -------------------------------------------------------------------------------------------
     def calcAvalVolume(self, offset, volume, pair):
 
+        if (self.available - self.reverseDeposit)<0:
+            self.writeCtaLog('预留保证金后，可用资金不足, 不能开仓. 当前可用资金为{}, 预留{}, 剩余{}'.format(self.available, self.reverseDeposit,
+                                                                                 self.available - self.reverseDeposit))
+            return 0
+
         attrOffset = 'maxOpenVolume' if offset == 'open' else 'maxCloseVolume'
         leftVolume = self.__getattribute__(attrOffset)
 
@@ -326,6 +331,7 @@ class SpreadStrategy(CtaTemplate):
     def onOrder(self, order):
         """收到委托变化推送（必须由用户继承实现）"""
         vtOrderID = order.vtOrderID.replace('.', '_')
+        found_order_group = False
         for order_group in self.pending:
             if vtOrderID in order_group:
                 new_status = {'orderID': vtOrderID,
@@ -338,6 +344,7 @@ class SpreadStrategy(CtaTemplate):
                               'offset': order.offset,
                               'symbol': order.symbol,
                               'vtSymbol': order.vtSymbol}
+                found_order_group = True
                 if self.checkChanged(order_group[vtOrderID], new_status):
                     print("------------------------------------")
                     print("old values:")
@@ -354,12 +361,7 @@ class SpreadStrategy(CtaTemplate):
                     # self.putSmsEvent(info)
                 break
 
-        try:
-            order_group
-        except UnboundLocalError:
-            order_group = None
-
-        if order_group is None:
+        if not found_order_group:
             exit
 
         if (order.status == STATUS_ALLTRADED or order.status == STATUS_CANCELLED):
