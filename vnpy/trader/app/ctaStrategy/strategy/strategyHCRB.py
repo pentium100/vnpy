@@ -184,6 +184,7 @@ class SpreadHCRBStrategy(CtaTemplate):
                 self.writeCtaLog(info)
                 if self.trading:
                     self.putSmsEvent(info)
+                    self.ctaEngine.writeLogToDB(info)
             elif orderVolume > 0:
                 self.writeCtaLog(
                     u'时间未到，不下单。{}可以{}仓{}组，差价：{}，价格分别是：{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
@@ -306,6 +307,7 @@ class SpreadHCRBStrategy(CtaTemplate):
                             self.writeCtaLog(warning)
                             if seconds < 75:
                                 self.putSmsEvent(warning)
+                            self.ctaEngine.writeLogToDB(warning)
 
     def onAccountChange(self, event):
         data = event.dict_['data']
