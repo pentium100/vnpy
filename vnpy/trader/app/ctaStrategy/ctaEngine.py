@@ -374,6 +374,10 @@ class CtaEngine(object):
         event = Event(type_=EVENT_CTA_LOG)
         event.dict_['data'] = log
         self.eventEngine.put(event)
+
+    def writeLogToDB(self, content):
+        log = VtLogData()
+        log.logContent = content
         event2 = Event(type_=EVENT_LOG)
         event2.dict_['data'] = log
         self.eventEngine.put(event2)
