@@ -14,7 +14,13 @@ class CtaSms:
     settingFileName = os.path.join(path, settingFileName)
 
     def __init__(self, eventEngine):
+        smsSetting = self.loadSmsSetting()
+        self.hostname = smsSetting['hostname']
+        self.username = smsSetting['username']
+        self.password = smsSetting['password']
+        self.database = smsSetting['database']
         self.connectToDB()
+        self.myConnection = None
         eventEngine.register(EVENT_CTA_SMS, self.sendSms)
         self.lastSms = ''
 
@@ -28,21 +34,29 @@ class CtaSms:
 
     # --------------------------------------------------------------------
     def connectToDB(self):
-        smsSetting = self.loadSmsSetting()
-        hostname = smsSetting['hostname']
-        username = smsSetting['username']
-        password = smsSetting['password']
-        database = smsSetting['database']
-        self.myConnection = mysql.connect(host=hostname, user=username, passwd=password, db=database)
+
+        self.myConnection = mysql.connect(host=self.hostname, user=self.username, passwd=self.password, db=self.database)
         self.myConnection.autocommit(True)
 
-
+    def checkDBConnected(self):
+        sq = "SELECT NOW()"
+        try:
+            cursor = self.myConnection.cursor()
+            cursor.execute(sq)
+        except mysql.Error as e:
+            if e.errno == 2006:
+                return self.connectToDB()
+            else:
+                print ("No connection with database.")
+                return False
 
     def sendSms(self, event):
         sms = event.dict_['data']
         print sms.smsContent
         content = sms.smsContent.decode("utf8")
         content = content.encode("gbk")
+        if not self.checkDBConnected():
+            self.connectToDB()
 
         for notifyTo in sms.notifyTo:
             notifyTo = notifyTo.encode("gbk")
