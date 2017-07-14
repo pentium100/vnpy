@@ -19,8 +19,9 @@ class CtaSms:
         self.username = smsSetting['username']
         self.password = smsSetting['password']
         self.database = smsSetting['database']
-        self.connectToDB()
         self.myConnection = None
+        self.connectToDB()
+
         eventEngine.register(EVENT_CTA_SMS, self.sendSms)
         self.lastSms = ''
 

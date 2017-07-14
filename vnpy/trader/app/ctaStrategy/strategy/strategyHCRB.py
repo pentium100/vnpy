@@ -379,7 +379,7 @@ class SpreadHCRBStrategy(CtaTemplate):
 
     def putSmsEvent(self, content):
         sms = SmsEventData()
-        sms.smsContent = content
+        sms.smsContent = ':'.join([self.name, content])
         sms.notifyTo = self.notifyTo
         event = Event(type_=EVENT_CTA_SMS)
         event.dict_['data'] = sms

@@ -294,6 +294,8 @@ class CtaEngineManager(QtWidgets.QWidget):
     
         if reply == QtWidgets.QMessageBox.Yes: 
             self.ctaEngine.savePosition()
+            for name in self.ctaEngine.strategyDict.keys():
+                self.ctaEngine.stopStrategy(name)
             
         event.accept()
         
