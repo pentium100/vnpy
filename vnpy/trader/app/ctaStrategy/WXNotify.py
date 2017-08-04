@@ -4,6 +4,7 @@
 EVENT_CTA_SMS = "eSms"
 
 import json
+import sys
 import os
 import requests
 
@@ -39,9 +40,10 @@ class WXNotify:
         """
         http://weixin.itg.com.cn/qy/manage/sendmessage?psnid=107030&appid=27&content=测试&password=visa2017
         """
-        for notifyTo in sms.notifyToWX:
-            payload = {'appid': self.appId, 'password': self.secret, 'content': sms.smsContent, 'psnid': notifyTo}
-            requests.post(self.url, data=payload)
+        try:
+            for notifyTo in sms.notifyToWX:
+                payload = {'appid': self.appId, 'password': self.secret, 'content': sms.smsContent, 'psnid': notifyTo}
+                requests.post(self.url, data=payload)
             # print r.status_code
             # notifyTo = notifyTo.encode("gbk")
             # cursor = self.myConnection.cursor()
@@ -50,3 +52,6 @@ class WXNotify:
             # sql = 'insert into api_mt_BBB(mobiles,content,is_wap) values ("%s", "%s", 0)' % (notifyTo, content)
             # sql = sql.decode('latin1')
             # cursor.execute(sql)
+        except:
+            e = sys.exc_info()[0]
+            print e

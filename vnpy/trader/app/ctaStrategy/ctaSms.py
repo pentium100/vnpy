@@ -5,6 +5,7 @@ EVENT_CTA_SMS = "eSms"
 
 import json
 import os
+import sys
 import MySQLdb as mysql
 from vnpy.trader.app.ctaStrategy.SmsEventData import SmsEventData
 
@@ -56,14 +57,18 @@ class CtaSms:
         print sms.smsContent
         content = sms.smsContent.decode("utf8")
         content = content.encode("gbk")
-        if not self.checkDBConnected():
-            self.connectToDB()
+        try:
+            if not self.checkDBConnected():
+                self.connectToDB()
 
-        for notifyTo in sms.notifyTo:
-            notifyTo = notifyTo.encode("gbk")
-            cursor = self.myConnection.cursor()
-            print self.myConnection.character_set_name()
-            # Read a single record
-            sql = 'insert into api_mt_BBB(mobiles,content,is_wap) values ("%s", "%s", 0)' % (notifyTo, content)
-            # sql = sql.decode('latin1')
-            cursor.execute(sql)
+            for notifyTo in sms.notifyTo:
+                notifyTo = notifyTo.encode("gbk")
+                cursor = self.myConnection.cursor()
+                print self.myConnection.character_set_name()
+                # Read a single record
+                sql = 'insert into api_mt_BBB(mobiles,content,is_wap) values ("%s", "%s", 0)' % (notifyTo, content)
+                # sql = sql.decode('latin1')
+                cursor.execute(sql)
+        except:
+            e = sys.exc_info()[0]
+            print e
