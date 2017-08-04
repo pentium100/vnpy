@@ -26,6 +26,7 @@ class SpreadStrategy(CtaTemplate):
                  'vtSymbol',
                  'volumes',
                  'notifyTo',
+                 'notifyToWX',
                  'openPrice',
                  'closePrice',
                  'maxGroupPerTrade',

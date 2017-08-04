@@ -22,13 +22,13 @@ class SpreadHCRBStrategy(CtaTemplate):
     className = 'SpreadHCRBStrategy'
     author = u'clw@itg'
 
-
     # 参数列表，保存了参数的名称
     paramList = ['name',
                  'vtSymbol',
                  'volumes',
                  'maxGroupPerTrade',
                  'notifyTo',
+                 'notifyToWX',
                  'openPrice',
                  'closePrice',
                  'slippages',
@@ -50,7 +50,6 @@ class SpreadHCRBStrategy(CtaTemplate):
                'closeVolume',
                'available'
                ]
-
 
     # ----------------------------------------------------------------------
     def __init__(self, ctaEngine, setting):
@@ -78,7 +77,7 @@ class SpreadHCRBStrategy(CtaTemplate):
         # self.qtyPerHands = []
 
 
-	self.timerCount = 0
+        self.timerCount = 0
         self.pending = []
         self.completed = []
         self.triggerQry = 5
@@ -96,7 +95,6 @@ class SpreadHCRBStrategy(CtaTemplate):
             if vtSymbol not in self.spreadPos:
                 self.spreadPos[vtSymbol] = 0
 
-
     # ----------------------------------------------------------------------
     def onInit(self):
         """初始化策略（必须由用户继承实现）"""
@@ -106,7 +104,7 @@ class SpreadHCRBStrategy(CtaTemplate):
         self.writeCtaLog(u'二腿套利合约下单策略初始化')
         self.pending = []
         self.completed = []
-	self.qryCount = 0
+        self.qryCount = 0
         self.trading = False
         self.putEvent()
 
@@ -126,7 +124,7 @@ class SpreadHCRBStrategy(CtaTemplate):
         self.trading = False
         self.ctaEngine.eventEngine.unregister(EVENT_TIMER, self.checkOrder)
         self.writeCtaLog(u'HCRB套利合约下单策略停止')
-	self.timerCount = 0
+        self.timerCount = 0
         self.putEvent()
 
     # ----------------------------------------------------------------------
@@ -175,7 +173,7 @@ class SpreadHCRBStrategy(CtaTemplate):
             # seconds = (datetime.datetime.now() - self.lastOrderCompleted).total_seconds()
             # 上次下单之后，停5秒再下
             # 2017/7/7 不再等5秒下单
-            if orderVolume > 0 :
+            if orderVolume > 0:
                 info = u'{}可以{}仓{}组，差价：{}，价格分别是：{},{}'.format(self.vtSymbol, openC, orderVolume, spread,
                                                               pair[0]['price'],
                                                               pair[1]['price'])
@@ -188,7 +186,7 @@ class SpreadHCRBStrategy(CtaTemplate):
     # -------------------------------------------------------------------------------------------
     def calcAvalVolume(self, offset, volume, pair):
 
-        if (self.available - self.reverseDeposit)<0:
+        if (self.available - self.reverseDeposit) < 0:
             self.writeCtaLog('预留保证金后，可用资金不足, 不能开仓. 当前可用资金为{}, 预留{}, 剩余{}'.format(self.available, self.reverseDeposit,
                                                                                  self.available - self.reverseDeposit))
             return 0
@@ -381,6 +379,7 @@ class SpreadHCRBStrategy(CtaTemplate):
         sms = SmsEventData()
         sms.smsContent = ':'.join([self.name, content])
         sms.notifyTo = self.notifyTo
+        sms.notifyToWX = self.notifyToWX
         event = Event(type_=EVENT_CTA_SMS)
         event.dict_['data'] = sms
         self.ctaEngine.eventEngine.put(event)
@@ -421,6 +420,7 @@ class SpreadHCRBStrategy(CtaTemplate):
                 dicts_are_equal = dicts_are_equal and (dict1[key] == dict2[key])
 
         return dicts_are_equal
+
     # ----------------------------------------------------------------------
     def onTrade(self, trade):
         """收到成交推送（必须由用户继承实现）"""
