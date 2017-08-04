@@ -395,6 +395,7 @@ class SpreadStrategy(CtaTemplate):
         sms = SmsEventData()
         sms.smsContent = ':'.join([self.name, content])
         sms.notifyTo = self.notifyTo
+        sms.notifyToWX = self.notifyToWX
         event = Event(type_=EVENT_CTA_SMS)
         event.dict_['data'] = sms
         self.ctaEngine.eventEngine.put(event)
