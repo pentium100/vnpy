@@ -34,7 +34,7 @@ def main():
     # 添加上层应用
     me.addApp(riskManager)
     me.addApp(ctaStrategy)
-    ctaSms = CtaSms(ee)
+    # ctaSms = CtaSms(ee)  //不发短信
     WXNotify(ee)
 
     # 创建主窗口
