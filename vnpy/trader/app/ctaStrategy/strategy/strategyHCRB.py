@@ -251,7 +251,7 @@ class SpreadHCRBStrategy(CtaTemplate):
 
         direction1 = CTAORDER_SELL if self.direction1 == CTAORDER_BUY else CTAORDER_COVER
         direction2 = CTAORDER_SELL if self.direction2 == CTAORDER_BUY else CTAORDER_COVER
-        direction3 = CTAORDER_SELL if self.direction3 == CTAORDER_BUY else CTAORDER_COVER
+        # direction3 = CTAORDER_SELL if self.direction3 == CTAORDER_BUY else CTAORDER_COVER
         if self.trading:
             order1 = self.sendOrder(self.vtSymbols[0], direction1, price1, self.slippages[0], self.priceGaps[0],
                                     self.volumes[0] * volume)
