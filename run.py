@@ -16,7 +16,7 @@ from vnpy.trader.gateway import ctpGateway
 
 # 加载上层应用
 from vnpy.trader.app import riskManager, ctaStrategy
-from vnpy.trader.app.ctaStrategy.ctaSms import CtaSms
+# from vnpy.trader.app.ctaStrategy.ctaSms import CtaSms
 from vnpy.trader.app.ctaStrategy.WXNotify import WXNotify
 
 #----------------------------------------------------------------------
