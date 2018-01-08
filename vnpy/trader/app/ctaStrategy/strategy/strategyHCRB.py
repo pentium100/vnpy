@@ -37,7 +37,8 @@ class SpreadHCRBStrategy(CtaTemplate):
                  'maxCloseVolume',
                  "marginRates",
                  "qtyPerHands",
-                 "reverseDeposit"
+                 "reverseDeposit",
+                 "notifyOnly"
                  ]
 
     # 变量列表，保存了变量的名称
@@ -167,8 +168,22 @@ class SpreadHCRBStrategy(CtaTemplate):
                         or (self.direction1 == CTAORDER_SHORT and offset == 'open' and spread >= orderPrice)
                     or (self.direction1 == CTAORDER_BUY and offset == 'close' and spread >= orderPrice)
                 or (self.direction1 == CTAORDER_SHORT and offset == 'close' and spread <= orderPrice)):
+
+
             openC = u'开' if offset == 'open' else '平'
+
+            if self.notifyOnly:
+                info = u'{}可以{}仓{}组，差价：{}，价格分别是：{},{}'.format(self.vtSymbol, openC, volume, spread,
+                                                              pair[0]['price'],
+                                                              pair[1]['price'])
+                self.writeCtaLog(info)
+                self.putSmsEvent(info)
+                self.onStop()
+                return 0
+
             orderVolume = self.calcAvalVolume(offset, volume, pair)
+
+
 
             # seconds = (datetime.datetime.now() - self.lastOrderCompleted).total_seconds()
             # 上次下单之后，停5秒再下

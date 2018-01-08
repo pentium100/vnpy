@@ -147,7 +147,7 @@ class CtaEngine(object):
                     req.offset = OFFSET_CLOSE
                 # 否则如果有空头今仓，则使用平今
                 elif posBuffer.shortToday:
-                    req.offset= OFFSET_CLOSETODAY
+                    req.offset = OFFSET_CLOSETODAY
                 # 其他情况使用平昨
                 else:
                     req.offset = OFFSET_CLOSE
