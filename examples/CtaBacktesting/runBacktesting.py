@@ -11,7 +11,7 @@ from vnpy.trader.app.ctaStrategy.ctaBacktesting import BacktestingEngine, MINUTE
 
 
 if __name__ == '__main__':
-    from vnpy.trader.app.ctaStrategy.strategy.strategyAtrRsi import AtrRsiStrategy
+    from vnpy.trader.app.ctaStrategy.strategy.strateg22yAtrRsi import AtrRsiStrategy
     
     # 创建回测引擎
     engine = BacktestingEngine()
