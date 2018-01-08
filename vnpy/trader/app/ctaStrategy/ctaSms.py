@@ -6,7 +6,7 @@ EVENT_CTA_SMS = "eSms"
 import json
 import os
 import sys
-import MySQLdb as mysql
+# import MySQLdb as mysql
 from vnpy.trader.app.ctaStrategy.SmsEventData import SmsEventData
 
 class CtaSms:
@@ -21,7 +21,7 @@ class CtaSms:
         self.password = smsSetting['password']
         self.database = smsSetting['database']
         self.myConnection = None
-        self.connectToDB()
+        # self.connectToDB()
 
         eventEngine.register(EVENT_CTA_SMS, self.sendSms)
         self.lastSms = ''
@@ -36,23 +36,24 @@ class CtaSms:
 
     # --------------------------------------------------------------------
     def connectToDB(self):
-
-        self.myConnection = mysql.connect(host=self.hostname, user=self.username, passwd=self.password, db=self.database)
-        self.myConnection.autocommit(True)
+        pass
+        # self.myConnection = mysql.connect(host=self.hostname, user=self.username, passwd=self.password, db=self.database)
+        # self.myConnection.autocommit(True)
 
     def checkDBConnected(self):
         sq = "SELECT NOW()"
-        try:
-            cursor = self.myConnection.cursor()
-            cursor.execute(sq)
-        except mysql.Error as e:
-            if e.errno == 2006:
-                return self.connectToDB()
-            else:
-                print ("No connection with database.")
-                return False
+        # try:
+        #    cursor = self.myConnection.cursor()
+        #    cursor.execute(sq)
+        # except mysql.Error as e:
+        #    if e.errno == 2006:
+        #        return self.connectToDB()
+        #    else:
+        #        print ("No connection with database.")
+        #        return False
 
     def sendSms(self, event):
+        return 0
         sms = event.dict_['data']
         print sms.smsContent
         content = sms.smsContent.decode("utf8")
