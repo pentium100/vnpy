@@ -375,10 +375,10 @@ class SpreadStrategy(CtaTemplate):
                     # self.putSmsEvent(info)
                 break
 
-        if not found_order_group:
+        if not found_order_group or order_group == None :
             exit
 
-        if (order.status == STATUS_ALLTRADED or order.status == STATUS_CANCELLED):
+        if (order.status == STATUS_ALLTRADED or order.status == STATUS_CANCELLED) :
 
             group_status = order.status
             for k, v in order_group.items():
