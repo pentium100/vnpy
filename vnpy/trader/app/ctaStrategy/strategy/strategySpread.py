@@ -139,10 +139,9 @@ class SpreadStrategy(CtaTemplate):
     # ----------------------------------------------------------------------
     def onTick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
-        now = datetime.datetime.now().strftime('%H:%M:%S')
-        closeAt = '22:51:00'
 
-        if self.inited and now < closeAt:
+
+        if self.inited and self.checkIfTrading():
             self.calcPrice('open', tick, self.pair1, self.open)
             self.calcPrice('close', tick, self.pair2, self.close)
             self.putEvent()
@@ -463,3 +462,37 @@ class SpreadStrategy(CtaTemplate):
     # -----------------------------------------------------------------------
     def loadPosition(self):
         pass
+
+    # ----------------------------------------------------------------------
+    def timeInRange(self, start, end, x):
+        """Return true if x is in the range [start, end]"""
+        if start <= end:
+            return start <= x <= end
+        else:
+            return start <= x or x <= end
+
+    # ---------------------------------------------------------------------
+    def checkIfTrading(self):
+        start = datetime.time(9, 0, 0)
+        end = datetime.time(10, 15, 0)
+        x = datetime.datetime.now()
+        xx = datetime.time(x.hour, x.minute, x.second)
+        if self.timeInRange(start, end, xx):
+            return True
+
+        start = datetime.time(10, 30, 0)
+        end = datetime.time(11, 30, 0)
+        if self.timeInRange(start, end, xx):
+            return True
+
+        start = datetime.time(13, 30, 0)
+        end = datetime.time(15, 0, 0)
+        if self.timeInRange(start, end, xx):
+            return True
+
+        start = datetime.time(21, 0, 0)
+        end = datetime.time(22, 50, 0)
+        if self.timeInRange(start, end, xx):
+            return True
+
+        return False
