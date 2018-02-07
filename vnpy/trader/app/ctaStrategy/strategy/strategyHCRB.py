@@ -131,7 +131,7 @@ class SpreadHCRBStrategy(CtaTemplate):
     # ----------------------------------------------------------------------
     def onTick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
-        if self.inited and self.checkIfTrading():
+        if self.inited:
             self.calcPrice('open', tick, self.pair1, self.open)
             self.calcPrice('close', tick, self.pair2, self.close)
             self.putEvent()
@@ -162,7 +162,7 @@ class SpreadHCRBStrategy(CtaTemplate):
         spread = self.__getattribute__(offset + 'Spread')
         orderPrice = self.__getattribute__(offset + 'Price')
 
-        if self.trading and pair[0]['price'] * pair[1]['price'] > 0 \
+        if self.trading and self.checkIfTrading() and pair[0]['price'] * pair[1]['price'] > 0 \
                 and self.__getattribute__(offset + 'Volume') > 1 and self.pending.__len__() == 0 and (
                             (self.direction1 == CTAORDER_BUY and offset == 'open' and spread <= orderPrice)
                         or (self.direction1 == CTAORDER_SHORT and offset == 'open' and spread >= orderPrice)
@@ -461,19 +461,19 @@ class SpreadHCRBStrategy(CtaTemplate):
     # ---------------------------------------------------------------------
     def checkIfTrading(self):
         start = datetime.time(9, 0, 0)
-        end = datetime.time(10, 15, 0)
+        end = datetime.time(10, 10, 0)
         x = datetime.datetime.now()
         xx = datetime.time(x.hour, x.minute, x.second)
         if self.timeInRange(start, end, xx):
             return True
 
         start = datetime.time(10, 30, 0)
-        end = datetime.time(11, 30, 0)
+        end = datetime.time(11, 25, 0)
         if self.timeInRange(start, end, xx):
             return True
 
         start = datetime.time(13, 30, 0)
-        end = datetime.time(15, 0, 0)
+        end = datetime.time(14, 55, 0)
         if self.timeInRange(start, end, xx):
             return True
 
