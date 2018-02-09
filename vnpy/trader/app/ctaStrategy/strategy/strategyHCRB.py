@@ -460,24 +460,24 @@ class SpreadHCRBStrategy(CtaTemplate):
 
     # ---------------------------------------------------------------------
     def checkIfTrading(self):
-        start = datetime.time(9, 0, 0)
+        start = datetime.time(9, 3, 0)
         end = datetime.time(10, 10, 0)
         x = datetime.datetime.now()
         xx = datetime.time(x.hour, x.minute, x.second)
         if self.timeInRange(start, end, xx):
             return True
 
-        start = datetime.time(10, 30, 0)
+        start = datetime.time(10, 33, 0)
         end = datetime.time(11, 25, 0)
         if self.timeInRange(start, end, xx):
             return True
 
-        start = datetime.time(13, 30, 0)
+        start = datetime.time(13, 33, 0)
         end = datetime.time(14, 55, 0)
         if self.timeInRange(start, end, xx):
             return True
 
-        start = datetime.time(21, 0, 0)
+        start = datetime.time(21, 3, 0)
         end = datetime.time(22, 50, 0)
         if self.timeInRange(start, end, xx):
             return True
