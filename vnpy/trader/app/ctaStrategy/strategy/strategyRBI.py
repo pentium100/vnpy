@@ -158,11 +158,12 @@ class SpreadRBIStrategy(CtaTemplate):
         volume2 = pair[1]['volume'] / int(self.volumes[1])
 
         amount2 = volume2 * 100 * pair[1]['price']
-        volume1 = pair[0]['volume'] / int (amount2 / pair[0]['price'] / 10)
-
+        self.volumes[0] = int(amount2 / pair[0]['price'] / 10)
+        volume1 = pair[0]['volume'] / int(self.volumes[0])
 
         volume = min(volume1, volume2)
         self.__setattr__(offset + 'Volume', volume)
+
 
         spread = self.__getattribute__(offset + 'Spread')
         orderPrice = self.__getattribute__(offset + 'Price')
