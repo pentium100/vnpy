@@ -473,25 +473,25 @@ class SpreadStrategy(CtaTemplate):
 
     # ---------------------------------------------------------------------
     def checkIfTrading(self):
-        start = datetime.time(9, 3, 0)
-        end = datetime.time(10, 10, 0)
+        start = datetime.time(9, 1, 0)
+        end = datetime.time(10, 13, 0)
         x = datetime.datetime.now()
         xx = datetime.time(x.hour, x.minute, x.second)
         if self.timeInRange(start, end, xx):
             return True
 
-        start = datetime.time(10, 33, 0)
-        end = datetime.time(11, 25, 0)
+        start = datetime.time(10, 31, 0)
+        end = datetime.time(11, 28, 0)
         if self.timeInRange(start, end, xx):
             return True
 
-        start = datetime.time(13, 33, 0)
-        end = datetime.time(14, 55, 0)
+        start = datetime.time(13, 31, 0)
+        end = datetime.time(14, 58, 0)
         if self.timeInRange(start, end, xx):
             return True
 
-        start = datetime.time(21, 3, 0)
-        end = datetime.time(22, 50, 0)
+        start = datetime.time(21, 1, 0)
+        end = datetime.time(22, 58, 0)
         if self.timeInRange(start, end, xx):
             return True
 

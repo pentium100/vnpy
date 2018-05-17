@@ -138,6 +138,7 @@ class SpreadRBIStrategy(CtaTemplate):
 
     # bid是买价，ask是卖价。
     def calcPrice(self, offset, tick, pair, sendOrderFunc):
+
         idx = self.vtSymbols.index(tick.symbol) + 1
         direction = self.__getattribute__('direction' + str(idx))
 
@@ -153,17 +154,19 @@ class SpreadRBIStrategy(CtaTemplate):
         pair[idx - 1]['price'] = getattr(tick, priceType + 'Price1')
         pair[idx - 1]['volume'] = getattr(tick, priceType + 'Volume1')
 
-        self.__setattr__(offset + 'Spread', pair[0]['price'] / pair[1]['price'])
+        if (pair[0]['price'] == 0 or pair[1]['price'] == 0):
+            return
 
-        volume2 = pair[1]['volume'] / int(self.volumes[1])
+        self.__setattr__(offset + 'Spread', round(pair[0]['price'] / pair[1]['price'],4))
+        volume2 = int(pair[1]['volume'] / self.volumes[1])
 
-        amount2 = volume2 * 100 * pair[1]['price']
-        self.volumes[0] = int(amount2 / pair[0]['price'] / 10)
+        amount2 = self.qtyPerHands[1] * pair[1]['price'] * self.volumes[1]
+
+        self.volumes[0] = int(amount2 / pair[0]['price'] / self.qtyPerHands[0])
         volume1 = pair[0]['volume'] / int(self.volumes[0])
 
         volume = min(volume1, volume2)
         self.__setattr__(offset + 'Volume', volume)
-
 
         spread = self.__getattribute__(offset + 'Spread')
         orderPrice = self.__getattribute__(offset + 'Price')
@@ -466,25 +469,25 @@ class SpreadRBIStrategy(CtaTemplate):
 
     # ---------------------------------------------------------------------
     def checkIfTrading(self):
-        start = datetime.time(9, 3, 0)
-        end = datetime.time(10, 10, 0)
+        start = datetime.time(9, 1, 0)
+        end = datetime.time(10, 13, 0)
         x = datetime.datetime.now()
         xx = datetime.time(x.hour, x.minute, x.second)
         if self.timeInRange(start, end, xx):
             return True
 
-        start = datetime.time(10, 33, 0)
-        end = datetime.time(11, 25, 0)
+        start = datetime.time(10, 31, 0)
+        end = datetime.time(11, 28, 0)
         if self.timeInRange(start, end, xx):
             return True
 
-        start = datetime.time(13, 33, 0)
-        end = datetime.time(14, 55, 0)
+        start = datetime.time(13, 31, 0)
+        end = datetime.time(14, 58, 0)
         if self.timeInRange(start, end, xx):
             return True
 
-        start = datetime.time(21, 3, 0)
-        end = datetime.time(22, 50, 0)
+        start = datetime.time(21, 1, 0)
+        end = datetime.time(22, 58, 0)
         if self.timeInRange(start, end, xx):
             return True
 
