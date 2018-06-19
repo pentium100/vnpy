@@ -193,14 +193,14 @@ class CtaEngineManager(QtWidgets.QWidget):
         # 按钮
         loadButton = QtWidgets.QPushButton(text.LOAD_STRATEGY)
         initAllButton = QtWidgets.QPushButton(text.INIT_ALL)
-        startAllButton = QtWidgets.QPushButton(text.START_ALL)
+        """startAllButton = QtWidgets.QPushButton(text.START_ALL)"""
         stopAllButton = QtWidgets.QPushButton(text.STOP_ALL)
         savePositionButton = QtWidgets.QPushButton(text.SAVE_POSITION_DATA)
         reloadButton = QtWidgets.QPushButton(u'重载策略参数')
         
         loadButton.clicked.connect(self.load)
         initAllButton.clicked.connect(self.initAll)
-        startAllButton.clicked.connect(self.startAll)
+        """startAllButton.clicked.connect(self.startAll)"""
         stopAllButton.clicked.connect(self.stopAll)
         savePositionButton.clicked.connect(self.ctaEngine.savePosition)
         reloadButton.clicked.connect(self.ctaEngine.reloadSetting)
@@ -218,7 +218,7 @@ class CtaEngineManager(QtWidgets.QWidget):
         hbox2 = QtWidgets.QHBoxLayout()
         hbox2.addWidget(loadButton)
         hbox2.addWidget(initAllButton)
-        hbox2.addWidget(startAllButton)
+        """hbox2.addWidget(startAllButton)"""
         hbox2.addWidget(stopAllButton)
         hbox2.addWidget(savePositionButton)
         hbox2.addWidget(reloadButton)
